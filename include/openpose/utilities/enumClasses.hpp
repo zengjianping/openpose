@@ -31,6 +31,7 @@ namespace op
     enum class Extensions : unsigned char
     {
         Images, // jpg, png, ...
+        Videos, // mp4, avi, ...
         Size
     };
 }

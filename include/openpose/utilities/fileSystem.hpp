@@ -56,6 +56,13 @@ namespace op
     OP_API std::string getFileParentFolderPath(const std::string& fullPath);
 
     /**
+     * This function extracts all the directories in a directory path.
+     * @param directoryPath std::string with the directory path.
+     * @return std::vector<std::string> with the existing directory names.
+     */
+    OP_API std::vector<std::string> getSubdirsOnDirectory(const std::string& directoryPath);
+
+    /**
      * This function extracts all the files in a directory path with the desired
      * extensions. If no extensions is specified, then all the file names are returned.
      * @param directoryPath std::string with the directory path.

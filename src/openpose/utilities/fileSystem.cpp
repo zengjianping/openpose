@@ -313,6 +313,65 @@ namespace op
         }
     }
 
+    std::vector<std::string> getSubdirsOnDirectory(const std::string& directoryPath)
+    {
+        try
+        {
+            // Format the path first
+            const auto formatedPath = formatAsDirectory(directoryPath);
+            // Check folder exits
+            if (!existDirectory(formatedPath))
+                error("Folder " + formatedPath + " does not exist.", __LINE__, __FUNCTION__, __FILE__);
+            // Read all files in folder
+            std::vector<std::string> filePaths;
+            #ifdef _WIN32
+                auto formatedPathWindows = formatedPath;
+                formatedPathWindows.append("\\*");
+                WIN32_FIND_DATA data;
+                HANDLE hFind;
+                if ((hFind = FindFirstFile(formatedPathWindows.c_str(), &data)) != INVALID_HANDLE_VALUE)
+                {
+                    do
+                        filePaths.emplace_back(formatedPath + data.cFileName);
+                    while (FindNextFile(hFind, &data) != 0);
+                    FindClose(hFind);
+                }
+            #elif defined __unix__ || defined __APPLE__
+                std::shared_ptr<DIR> directoryPtr(
+                    opendir(formatedPath.c_str()),
+                    [](DIR* formatedPath){ formatedPath && closedir(formatedPath); }
+                );
+                struct dirent* direntPtr;
+                while ((direntPtr = readdir(directoryPtr.get())) != nullptr)
+                {
+                    if (strcmp(direntPtr->d_name, ".") == 0 || strcmp(direntPtr->d_name, "..") == 0)
+                    //if (direntPtr->d_name[0] == '.')
+                        continue;
+                    std::string currentPath = formatedPath + direntPtr->d_name;
+                    if (!existDirectory(currentPath))
+                        continue;
+                    filePaths.emplace_back(currentPath);
+                }
+            #else
+                #error Unknown environment!
+            #endif
+            // Check #files > 0
+            //if (filePaths.empty())
+            //    error("No directory were found on " + formatedPath, __LINE__, __FUNCTION__, __FILE__);
+            // Sort alphabetically
+            std::sort(filePaths.begin(), filePaths.end());
+            // Natural sort
+            // std::sort(filePaths.begin(), filePaths.end(), compareNat);
+            // Return result
+            return filePaths;
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+            return {};
+        }
+    }
+
     std::vector<std::string> getFilesOnDirectory(const std::string& directoryPath,
                                                  const std::vector<std::string>& extensions)
     {
@@ -354,8 +413,8 @@ namespace op
                 #error Unknown environment!
             #endif
             // Check #files > 0
-            if (filePaths.empty())
-                error("No files were found on " + formatedPath, __LINE__, __FUNCTION__, __FILE__);
+            //if (filePaths.empty())
+            //    error("No files were found on " + formatedPath, __LINE__, __FUNCTION__, __FILE__);
             // If specific extensions specified
             if (!extensions.empty())
             {
@@ -406,6 +465,11 @@ namespace op
                     "bmp", "dib", "pbm", "pgm", "ppm", "sr", "ras",
                     // Most of them supported by OpenCV
                     "jpg", "jpeg", "png"};
+                return getFilesOnDirectory(directoryPath, extensionNames);
+            }
+            if (extensions == Extensions::Videos)
+            {
+                const std::vector<std::string> extensionNames{"mp4", "avi"};
                 return getFilesOnDirectory(directoryPath, extensionNames);
             }
             // Unknown kind of extensions

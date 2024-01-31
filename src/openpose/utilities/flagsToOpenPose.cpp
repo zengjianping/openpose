@@ -1,6 +1,7 @@
 #include <openpose/utilities/flagsToOpenPose.hpp>
 #include <cstdio> // sscanf
 #include <openpose/utilities/check.hpp>
+#include <openpose/utilities/fileSystem.hpp>
 
 namespace op
 {
@@ -186,7 +187,11 @@ namespace op
             if (!imageDirectoryStd.empty())
                 return ProducerType::ImageDirectory;
             else if (!videoPathStd.empty())
+            {
+                if (existDirectory(videoPathStd))
+                    return ProducerType::StereoVideo;
                 return ProducerType::Video;
+            }
             else if (!ipCameraPathStd.empty())
                 return ProducerType::IPCamera;
             else if (flirCamera)
@@ -215,6 +220,8 @@ namespace op
                 return std::make_pair(ProducerType::ImageDirectory, imageDirectory);
             else if (type == ProducerType::Video)
                 return std::make_pair(ProducerType::Video, videoPath);
+            else if (type == ProducerType::StereoVideo)
+                return std::make_pair(ProducerType::StereoVideo, videoPath);
             else if (type == ProducerType::IPCamera)
                 return std::make_pair(ProducerType::IPCamera, ipCameraPath);
             // Flir camera

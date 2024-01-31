@@ -146,6 +146,7 @@ namespace op
          */
         void keepDesiredFrameRate();
 
+    public:
         /**
          * Function to be defined by its children class. It retrieves and returns a new frame from the frames producer.
          * @return Mat with the new frame.

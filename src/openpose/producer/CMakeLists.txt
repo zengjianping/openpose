@@ -8,6 +8,7 @@ set(SOURCES_OP_PRODUCER
     spinnakerWrapper.cpp
     videoCaptureReader.cpp
     videoReader.cpp
+    stereoVideoReader.cpp
     webcamReader.cpp)
 
 include(${CMAKE_SOURCE_DIR}/cmake/Utils.cmake)

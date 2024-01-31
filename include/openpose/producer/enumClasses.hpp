@@ -38,6 +38,7 @@ namespace op
         IPCamera,
         /** A video frames extractor, extending the functionality of cv::VideoCapture. */
         Video,
+        StereoVideo,
         /** A webcam frames extractor, extending the functionality of cv::VideoCapture. */
         Webcam,
         /** No type defined. Default state when no specific Producer has been picked yet. */

@@ -36,6 +36,7 @@ namespace op
             mProperties[(unsigned int)ProducerProperty::AutoRepeat] = (double) false;
             mProperties[(unsigned int)ProducerProperty::Flip] = (double) false;
             mProperties[(unsigned int)ProducerProperty::Rotation] = 0.;
+            mProperties[(unsigned int)ProducerProperty::FrameStep] = 1.;
             mProperties[(unsigned int)ProducerProperty::NumberViews] = numberViews;
             auto& mNumberViews = mProperties[(unsigned int)ProducerProperty::NumberViews];
             // Camera (distortion, intrinsic, and extrinsic) parameters
@@ -463,6 +464,11 @@ namespace op
                     }
                     error("No camera found.", __LINE__, __FUNCTION__, __FILE__);
                 }
+            }
+            else if (producerType == ProducerType::StereoVideo)
+            {
+                return std::make_shared<StereoVideoReader>(
+                    producerString, cameraParameterPath, undistortImage, numberViews);
             }
             // Unknown
             else if (producerType != ProducerType::None)

@@ -13,5 +13,6 @@
 #include <openpose/producer/videoReader.hpp>
 #include <openpose/producer/webcamReader.hpp>
 #include <openpose/producer/wDatumProducer.hpp>
+#include <openpose/producer/stereoVideoReader.hpp>
 
 #endif // OPENPOSE_PRODUCER_HEADERS_HPP

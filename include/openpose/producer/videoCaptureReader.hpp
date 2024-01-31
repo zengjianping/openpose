@@ -36,20 +36,20 @@ namespace op
          */
         virtual ~VideoCaptureReader();
 
-        virtual std::string getNextFrameName() = 0;
+        virtual std::string getNextFrameName();
 
         virtual bool isOpened() const;
 
         void release();
 
-        virtual double get(const int capProperty) = 0;
+        virtual double get(const int capProperty);
 
-        virtual void set(const int capProperty, const double value) = 0;
+        virtual void set(const int capProperty, const double value);
 
     protected:
-        virtual Matrix getRawFrame() = 0;
+        virtual Matrix getRawFrame();
 
-        virtual std::vector<Matrix> getRawFrames() = 0;
+        virtual std::vector<Matrix> getRawFrames();
 
         void resetWebcam(const int index, const bool throwExceptionIfNoOpened);
 
