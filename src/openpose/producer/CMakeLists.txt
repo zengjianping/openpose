@@ -9,6 +9,7 @@ set(SOURCES_OP_PRODUCER
     videoCaptureReader.cpp
     videoReader.cpp
     stereoVideoReader.cpp
+    mindReader.cpp
     webcamReader.cpp)
 
 include(${CMAKE_SOURCE_DIR}/cmake/Utils.cmake)
