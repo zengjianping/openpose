@@ -31,16 +31,12 @@ namespace op
         std::vector<Matrix> getRawFrames();
 
     protected:
-/*
         void bufferingThread();
-        void readAndUndistortImage(const int i, const Spinnaker::ImagePtr& imagePtr,
-                                    const cv::Mat& cameraIntrinsics = cv::Mat(),
-                                    const cv::Mat& cameraDistorsions = cv::Mat());
-        std::vector<Matrix> acquireImages(
-            const std::vector<Matrix>& opCameraIntrinsics,
-            const std::vector<Matrix>& opCameraDistorsions,
-            const int cameraIndex = -1);
-*/
+        std::vector<Matrix> acquireImages(const std::vector<Matrix>& opCameraIntrinsics,
+            const std::vector<Matrix>& opCameraDistorsions, const int cameraIndex = -1);
+        void readAndUndistortImage(int i, const cv::Mat& cvMatDistorted,
+            const cv::Mat& cameraIntrinsics = cv::Mat(), const cv::Mat& cameraDistorsions = cv::Mat());
+
     protected:
         bool mInitialized = false;
         int mCameraCount = 0;
@@ -58,7 +54,7 @@ namespace op
         CameraParameterReader mCameraParameterReader;
         // Thread
         bool mThreadOpened;
-        //std::vector<Spinnaker::ImagePtr> mBuffer;
+        std::vector<cv::Mat> mBuffer;
         std::mutex mBufferMutex;
         std::atomic<bool> mCloseThread;
         std::thread mThread;
@@ -368,93 +364,6 @@ namespace op
         return CameraSetImageResolution(cameraHandle, &sRoiResolution);
     }
 
-    /*Spinnaker::ImagePtr spinnakerImagePtrToColor(const Spinnaker::ImagePtr &imagePtr)
-    {
-        // Original image --> BGR uchar image
-        // Print image information
-        // Convert image to RGB
-        // Interpolation methods
-        // http://softwareservices.ptgrey.com/Spinnaker/latest/group___spinnaker_defs.html
-        // DEFAULT     Default method.
-        // NO_COLOR_PROCESSING     No color processing.
-        // NEAREST_NEIGHBOR    Fastest but lowest quality. Equivalent to
-        //                     FLYCAPTURE_NEAREST_NEIGHBOR_FAST in FlyCapture.
-        // EDGE_SENSING    Weights surrounding pixels based on localized edge orientation.
-        // HQ_LINEAR   Well-balanced speed and quality.
-        // RIGOROUS    Slowest but produces good results.
-        // IPP     Multi-threaded with similar results to edge sensing.
-        // DIRECTIONAL_FILTER  Best quality but much faster than rigorous.
-        // Colors
-        // http://softwareservices.ptgrey.com/Spinnaker/latest/group___camera_defs__h.html#ggabd5af55aaa20bcb0644c46241c2cbad1a33a1c8a1f6dbcb4a4eaaaf6d4d7ff1d1
-        // PixelFormat_BGR8
-
-        // // Time tests
-        // // DEFAULT
-        // const auto reps = 1e2;
-        // const auto begin1 = std::chrono::high_resolution_clock::now();
-        // for (auto asdf = 0 ; asdf < reps ; asdf++)
-        //     const auto imagePtrTemp = imagePtr->Convert(Spinnaker::PixelFormat_BGR8, Spinnaker::DEFAULT);
-        // const auto durationMs1 = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        //     std::chrono::high_resolution_clock::now()-begin1
-        // ).count() * 1e-6;
-        // // EDGE_SENSING
-        // const auto begin2 = std::chrono::high_resolution_clock::now();
-        // for (auto asdf = 0 ; asdf < reps ; asdf++)
-        //     const auto imagePtrTemp = imagePtr->Convert(Spinnaker::PixelFormat_BGR8, Spinnaker::EDGE_SENSING);
-        // const auto durationMs2 = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        //     std::chrono::high_resolution_clock::now()-begin2
-        // ).count() * 1e-6;
-        // // IPP
-        // const auto begin3 = std::chrono::high_resolution_clock::now();
-        // for (auto asdf = 0 ; asdf < reps ; asdf++)
-        //     const auto imagePtrTemp = imagePtr->Convert(Spinnaker::PixelFormat_BGR8, Spinnaker::IPP);
-        // const auto durationMs3 = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        //     std::chrono::high_resolution_clock::now()-begin3
-        // ).count() * 1e-6;
-        // // Print times
-        // opLog("Time (ms) 1: " + std::to_string(durationMs1 / reps), Priority::High);
-        // opLog("Time (ms) 2: " + std::to_string(durationMs2 / reps), Priority::High);
-        // opLog("Time (ms) 3: " + std::to_string(durationMs3 / reps), Priority::High);
-
-        // Return right one
-        // ~ 1.3 ms but pixeled
-        // return imagePtr->Convert(Spinnaker::PixelFormat_BGR8, Spinnaker::DEFAULT);
-        // ~0.5 ms but BW
-        // return imagePtr->Convert(Spinnaker::PixelFormat_BGR8, Spinnaker::NO_COLOR_PROCESSING);
-        // ~6 ms, looks as good as best
-        // return imagePtr->Convert(Spinnaker::PixelFormat_BGR8, Spinnaker::HQ_LINEAR);
-        // ~2.2 ms default << edge << best
-        // return imagePtr->Convert(Spinnaker::PixelFormat_BGR8, Spinnaker::EDGE_SENSING);
-        // ~115, too slow
-        // return imagePtr->Convert(Spinnaker::PixelFormat_BGR8, Spinnaker::RIGOROUS);
-        // ~1.7 ms, slightly worse than HQ_LINEAR
-        return imagePtr->Convert(Spinnaker::PixelFormat_BGR8, Spinnaker::IPP);
-        // ~30 ms, ideally best quality?
-        // return imagePtr->Convert(Spinnaker::PixelFormat_BGR8, Spinnaker::DIRECTIONAL_FILTER);
-    }
-
-    // This function converts between Spinnaker::ImagePtr container to cv::Mat container used in OpenCV.
-    cv::Mat spinnakerWrapperToCvMat(const Spinnaker::ImagePtr &imagePtr)
-    {
-        try
-        {
-            const auto XPadding = imagePtr->GetXPadding();
-            const auto YPadding = imagePtr->GetYPadding();
-            const auto rowsize = imagePtr->GetWidth();
-            const auto colsize = imagePtr->GetHeight();
-
-            // Image data contains padding. When allocating cv::Mat container size, you need to account for the X,Y
-            // image data padding.
-            return cv::Mat((int)(colsize + YPadding), (int)(rowsize + XPadding), CV_8UC3, imagePtr->GetData(),
-                            imagePtr->GetStride());
-        }
-        catch (const std::exception& e)
-        {
-            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
-            return cv::Mat();
-        }
-    }*/
-
     MindReaderImpl::MindReaderImpl(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
                     bool undistortImage, int cameraIndex, int cameraTriggerMode)
             : mInitialized(false),  mCameraIndex(cameraIndex), mCameraTriggerMode(cameraTriggerMode),
@@ -606,7 +515,7 @@ namespace op
             // Start buffering thread
             mThreadOpened = true;
             mCloseThread = false;
-            //mThread = std::thread{&MindReaderImpl::bufferingThread, this};
+            mThread = std::thread{&MindReaderImpl::bufferingThread, this};
 
             // Get resolution
             const auto cvMats = getRawFrames();
@@ -709,9 +618,8 @@ namespace op
                 error("The number of cameras must be the same as the INTRINSICS vector size.",
                     __LINE__, __FUNCTION__, __FILE__);
             // Return frames
-            //return acquireImages(mCameraParameterReader.getCameraIntrinsics(),
-            //                                mCameraParameterReader.getCameraDistortions(),
-            //                                mCameraIndex);
+            return acquireImages(mCameraParameterReader.getCameraIntrinsics(),
+                mCameraParameterReader.getCameraDistortions(), mCameraIndex);
         }
         catch (const std::exception& e)
         {
@@ -719,24 +627,72 @@ namespace op
             return {};
         }
     }
-/*
-    void MindReaderImpl::readAndUndistortImage(const int i, const Spinnaker::ImagePtr& imagePtr,
-                                const cv::Mat& cameraIntrinsics = cv::Mat(),
-                                const cv::Mat& cameraDistorsions = cv::Mat())
+
+    void MindReaderImpl::bufferingThread()
     {
         try
         {
-            // Original image --> BGR uchar image
-            const auto imagePtrColor = spinnakerImagePtrToColor(imagePtr);
-            // Spinnaker to cv::Mat
-            const auto cvMatDistorted = spinnakerWrapperToCvMat(imagePtrColor);
-            // const auto cvMatDistorted = spinnakerWrapperToCvMat(imagePtr);
+            mCloseThread = false;
+            std::vector<cv::Mat> cvMats(mCameraCount);
+
+            while (!mCloseThread)
+            {
+                // Trigger
+                for (int i = 0; i < mCameraCount; i++)
+                    grabNextImageByTrigger(mCameraHandles[i]);
+
+                // Get frame
+                bool imagesExtracted = true;
+                for (int i = 0; i < mCameraCount; i++)
+                {
+                    int cameraHandle = mCameraHandles[i];
+                    tSdkFrameHead sFrameInfo;
+                    BYTE* pbyBuffer = nullptr;
+
+                    unsigned char*pRgbBuffer = (unsigned char*)malloc(mResolution.x*mResolution.y*3);
+
+                    if(CameraGetImageBuffer(cameraHandle, &sFrameInfo, &pbyBuffer, 1000) == CAMERA_STATUS_SUCCESS)
+                    {
+                        CameraImageProcess(cameraHandle, pbyBuffer, pRgbBuffer, &sFrameInfo);
+                        
+                        cv::Mat matImage(cv::Size(sFrameInfo.iWidth, sFrameInfo.iHeight), 
+                            sFrameInfo.uiMediaType == CAMERA_MEDIA_TYPE_MONO8 ? CV_8UC1 : CV_8UC3,
+                            pRgbBuffer);
+                    }
+                    else
+                    {
+                        delete pRgbBuffer;
+                        imagesExtracted = false;
+                    }
+                }
+
+                if (imagesExtracted)
+                {
+                    std::unique_lock<std::mutex> lock{mBufferMutex};
+                    std::swap(mBuffer, cvMats);
+                    lock.unlock();
+                    std::this_thread::sleep_for(std::chrono::microseconds{1});
+                }
+            }
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+        }
+    }
+
+    void MindReaderImpl::readAndUndistortImage(int i, const cv::Mat& cvMatDistorted,
+        const cv::Mat& cameraIntrinsics, const cv::Mat& cameraDistorsions)
+    {
+        try
+        {
             // Undistort
             if (mUndistortImage)
             {
                 // Sanity check
                 if (cameraIntrinsics.empty() || cameraDistorsions.empty())
                     error("Camera intrinsics/distortions were empty.", __LINE__, __FUNCTION__, __FILE__);
+
                 // // Option a - 80 ms / 3 images
                 // // http://docs.opencv.org/2.4/modules/imgproc/doc/geometric_transformations.html#undistort
                 // cv::undistort(cvMatDistorted, mCvMats[i], cameraIntrinsics, cameraDistorsions);
@@ -774,7 +730,9 @@ namespace op
             }
             // Baseline (do not undistort)
             else
+            {
                 mCvMats[i] = cvMatDistorted.clone();
+            }
         }
         catch (const std::exception& e)
         {
@@ -782,72 +740,15 @@ namespace op
         }
     }
 
-    void MindReaderImpl::bufferingThread()
-    {
-        #ifdef USE_FLIR_CAMERA
-            try
-            {
-                mCloseThread = false;
-                // Get cameras - ~0.005 ms (3 cameras)
-                std::vector<Spinnaker::CameraPtr> cameraPtrs(mCameraList.GetSize());
-                for (auto i = 0u; i < cameraPtrs.size(); i++)
-                    cameraPtrs.at(i) = mCameraList.GetBySerial(mSerialNumbers.at(i)); // Sorted by Serial Number
-                    // cameraPtrs.at(i) = mCameraList.GetByIndex(i); // Sorted by however Spinnaker decided
-                while (!mCloseThread)
-                {
-                    // Trigger
-                    for (auto i = 0u; i < cameraPtrs.size(); i++)
-                    {
-                        // Retrieve GenICam nodemap
-                        auto& iNodeMap = cameraPtrs[i]->GetNodeMap();
-                        Spinnaker::GenApi::CEnumerationPtr ptrAcquisitionMode = iNodeMap.GetNode("AcquisitionMode");
-                        const auto result = GrabNextImageByTrigger(iNodeMap);
-                        if (result != 0)
-                            error("Error in GrabNextImageByTrigger.", __LINE__, __FUNCTION__, __FILE__);
-                    }
-                    // Get frame
-                    std::vector<Spinnaker::ImagePtr> imagePtrs(cameraPtrs.size());
-                    for (auto i = 0u; i < cameraPtrs.size(); i++)
-                        imagePtrs.at(i) = cameraPtrs.at(i)->GetNextImage();
-                    // Move to buffer
-                    bool imagesExtracted = true;
-                    for (auto& imagePtr : imagePtrs)
-                    {
-                        if (imagePtr->IsIncomplete())
-                        {
-                            opLog("Image incomplete with image status " + std::to_string(imagePtr->GetImageStatus())
-                                + "...", Priority::High, __LINE__, __FUNCTION__, __FILE__);
-                            imagesExtracted = false;
-                            break;
-                        }
-                    }
-                    if (imagesExtracted)
-                    {
-                        std::unique_lock<std::mutex> lock{mBufferMutex};
-                        std::swap(mBuffer, imagePtrs);
-                        lock.unlock();
-                        std::this_thread::sleep_for(std::chrono::microseconds{1});
-                    }
-                }
-            }
-            catch (const std::exception& e)
-            {
-                error(e.what(), __LINE__, __FUNCTION__, __FILE__);
-            }
-        #endif
-    }
-
     // This function acquires and displays images from each device.
-    std::vector<Matrix> MindReaderImpl::acquireImages(
-        const std::vector<Matrix>& opCameraIntrinsics,
-        const std::vector<Matrix>& opCameraDistorsions,
-        const int cameraIndex = -1)
+    std::vector<Matrix> MindReaderImpl::acquireImages(const std::vector<Matrix>& opCameraIntrinsics,
+        const std::vector<Matrix>& opCameraDistorsions, const int cameraInde)
     {
         try
         {
             OP_OP2CVVECTORMAT(cameraIntrinsics, opCameraIntrinsics)
             OP_OP2CVVECTORMAT(cameraDistorsions, opCameraDistorsions)
-            // std::vector<cv::Mat> cvMats;
+            std::vector<cv::Mat> cvMats;
 
             // Retrieve, convert, and return an image for each camera
             // In order to work with simultaneous camera streams, nested loops are
@@ -855,16 +756,6 @@ namespace op
             // through the cameras; otherwise, all images will be grabbed from a
             // single camera before grabbing any images from another.
 
-            // // Get cameras - ~0.005 ms (3 cameras)
-            // std::vector<Spinnaker::CameraPtr> cameraPtrs(cameraList.GetSize());
-            // for (auto i = 0u; i < cameraPtrs.size(); i++)
-            //     cameraPtrs.at(i) = cameraList.GetByIndex(i);
-
-            // Read raw images - ~0.15 ms (3 cameras)
-            // std::vector<Spinnaker::ImagePtr> imagePtrs(cameraPtrs.size());
-            // for (auto i = 0u; i < cameraPtrs.size(); i++)
-            //     imagePtrs.at(i) = cameraPtrs.at(i)->GetNextImage();
-            std::vector<Spinnaker::ImagePtr> imagePtrs;
             // Retrieve frame
             auto cvMatRetrieved = false;
             while (!cvMatRetrieved)
@@ -873,7 +764,7 @@ namespace op
                 std::unique_lock<std::mutex> lock{mBufferMutex};
                 if (!mBuffer.empty())
                 {
-                    std::swap(imagePtrs, mBuffer);
+                    std::swap(cvMats, mBuffer);
                     cvMatRetrieved = true;
                 }
                 // No frames available -> sleep & wait
@@ -883,100 +774,88 @@ namespace op
                     std::this_thread::sleep_for(std::chrono::microseconds{5});
                 }
             }
-            // Getting frames
-            // Retrieve next received image and ensure image completion
-            // Spinnaker::ImagePtr imagePtr = cameraPtrs.at(i)->GetNextImage();
 
             // All images completed
             bool imagesExtracted = true;
-            for (auto& imagePtr : imagePtrs)
+            for (const cv::Mat& cvMat : cvMats)
             {
-                if (imagePtr->IsIncomplete())
+                if (cvMat.empty())
                 {
-                    opLog("Image incomplete with image status " + std::to_string(imagePtr->GetImageStatus())
-                        + "...", Priority::High, __LINE__, __FUNCTION__, __FILE__);
+                    opLog("Image incomplete.", Priority::High, __LINE__, __FUNCTION__, __FILE__);
                     imagesExtracted = false;
                     break;
                 }
             }
+
             mCvMats.clear();
             // Convert to cv::Mat
             if (imagesExtracted)
             {
-                // // Original image --> BGR uchar image - ~4 ms (3 cameras)
-                // for (auto& imagePtr : imagePtrs)
-                //     imagePtr = spinnakerImagePtrToColor(imagePtr);
-
                 // Init anti-distortion matrices first time
                 if (mRemoveDistortionMaps1.empty())
-                    mRemoveDistortionMaps1.resize(imagePtrs.size());
+                    mRemoveDistortionMaps1.resize(cvMats.size());
                 if (mRemoveDistortionMaps2.empty())
-                    mRemoveDistortionMaps2.resize(imagePtrs.size());
+                    mRemoveDistortionMaps2.resize(cvMats.size());
+                mCvMats.resize(cvMats.size());
 
-                // Multi-thread undistort (slowest function in the class)
-                //     ~7.7msec (3 cameras + multi-thread + (initUndistortRectifyMap + remap) + LINEAR)
-                //     ~23.2msec (3 cameras + multi-thread + (initUndistortRectifyMap + remap) + CUBIC)
-                //     ~35msec (3 cameras + multi-thread + undistort)
-                //     ~59msec (2 cameras + single-thread + undistort)
-                //     ~75msec (3 cameras + single-thread + undistort)
-                mCvMats.resize(imagePtrs.size());
                 // All cameras
-                if (cameraIndex < 0)
+                if (mCameraIndex < 0)
                 {
                     // Undistort image
                     if (mUndistortImage)
                     {
-                        std::vector<std::thread> threads(imagePtrs.size()-1);
+                        std::vector<std::thread> threads(cvMats.size()-1);
                         for (auto i = 0u; i < threads.size(); i++)
                         {
                             // Multi-thread option
-                            threads.at(i) = std::thread{&ImplMindReaderImpl::readAndUndistortImage, this, i,
-                                                        imagePtrs.at(i), cameraIntrinsics.at(i),
-                                                        cameraDistorsions.at(i)};
+                            threads.at(i) = std::thread{&MindReaderImpl::readAndUndistortImage, this, i,
+                                cvMats.at(i), cameraIntrinsics.at(i), cameraDistorsions.at(i)};
                             // // Single-thread option
                             // readAndUndistortImage(i, imagePtrs.at(i), cameraIntrinsics.at(i), cameraDistorsions.at(i));
                         }
-                        readAndUndistortImage((int)imagePtrs.size()-1, imagePtrs.back(), cameraIntrinsics.back(),
-                                                cameraDistorsions.back());
+                        readAndUndistortImage((int)cvMats.size()-1, cvMats.back(),
+                            cameraIntrinsics.back(), cameraDistorsions.back());
+                
                         // Close threads
-                        for (auto& thread : threads)
+                        for (std::thread& thread : threads)
+                        {
                             if (thread.joinable())
                                 thread.join();
+                        }
                     }
                     // Do not undistort image
                     else
                     {
-                        for (auto i = 0u; i < imagePtrs.size(); i++)
-                            readAndUndistortImage(i, imagePtrs.at(i));
+                        for (auto i = 0u; i < cvMats.size(); i++)
+                            readAndUndistortImage(i, cvMats[i]);
                     }
                 }
                 // Only 1 camera
                 else
                 {
                     // Sanity check
-                    if ((unsigned int)cameraIndex >= imagePtrs.size())
-                        error("There are only " + std::to_string(imagePtrs.size())
+                    if ((unsigned int)mCameraIndex >= cvMats.size())
+                        error("There are only " + std::to_string(cvMats.size())
                                 + " cameras, but you asked for the "
-                                + std::to_string(cameraIndex+1) +"-th camera (i.e., `--flir_camera_index "
-                                + std::to_string(cameraIndex) +"`), which doesn't exist. Note that the index is"
+                                + std::to_string(mCameraIndex+1) +"-th camera (i.e., `--flir_camera_index "
+                                + std::to_string(mCameraIndex) +"`), which doesn't exist. Note that the index is"
                                 + " 0-based.", __LINE__, __FUNCTION__, __FILE__);
                     // Undistort image
                     if (mUndistortImage)
-                        readAndUndistortImage(cameraIndex, imagePtrs.at(cameraIndex), cameraIntrinsics.at(cameraIndex),
-                                                cameraDistorsions.at(cameraIndex));
+                    {
+                        readAndUndistortImage(mCameraIndex, cvMats.at(mCameraIndex),
+                            cameraIntrinsics.at(mCameraIndex), cameraDistorsions.at(mCameraIndex));
+                    }
                     // Do not undistort image
                     else
-                        readAndUndistortImage(cameraIndex, imagePtrs.at(cameraIndex));
-                    mCvMats = std::vector<cv::Mat>{mCvMats[cameraIndex]};
+                    {
+                        readAndUndistortImage(mCameraIndex, cvMats.at(mCameraIndex));
+                    }
+                    mCvMats = std::vector<cv::Mat>{mCvMats[mCameraIndex]};
                 }
             }
             OP_CV2OPVECTORMAT(opMats, mCvMats)
             return opMats;
-        }
-        catch (Spinnaker::Exception &e)
-        {
-            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
-            return {};
         }
         catch (const std::exception& e)
         {
@@ -984,6 +863,5 @@ namespace op
             return {};
         }
     }
-*/
 }
 
