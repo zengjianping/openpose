@@ -963,7 +963,7 @@ endif (WITH_FLIR_CAMERA)
 if (UNIX OR APPLE)
   set(OpenPose_3rdparty_libraries ${OpenPose_3rdparty_libraries} pthread)
 endif (UNIX OR APPLE)
-
+set(OpenPose_3rdparty_libraries ${OpenPose_3rdparty_libraries} MVSDK)
 
 
 ### ADD SUBDIRECTORIES
