@@ -16,7 +16,7 @@ namespace op
     OP_API void estimateAndSaveIntrinsics(
         const Point<int>& gridInnerCorners, const float gridSquareSizeMm, const int flags,
         const std::string& outputParameterFolder, const std::string& imageFolder, const std::string& serialNumber,
-        const bool saveImagesWithCorners = false);
+        const bool saveImagesWithCorners = false, const bool undistortImages = false);
 
     OP_API void estimateAndSaveExtrinsics(
         const std::string& parameterFolder, const std::string& imageFolder, const Point<int>& gridInnerCorners,

@@ -32,7 +32,7 @@ void configureWrapper(op::Wrapper& opWrapper)
         op::String producerString;
         std::tie(producerType, producerString) = op::flagsToProducer(
             op::String(FLAGS_image_dir), op::String(FLAGS_video), op::String(FLAGS_ip_camera), FLAGS_camera,
-            FLAGS_flir_camera, FLAGS_flir_camera_index);
+            FLAGS_flir_camera, FLAGS_flir_camera_index, FLAGS_mind_camera, FLAGS_mind_camera_index);
         // cameraSize
         const auto cameraSize = op::flagsToPoint(op::String(FLAGS_camera_resolution), "-1x-1");
         // outputSize
@@ -96,7 +96,8 @@ void configureWrapper(op::Wrapper& opWrapper)
         const op::WrapperStructInput wrapperStructInput{
             producerType, producerString, FLAGS_frame_first, FLAGS_frame_step, FLAGS_frame_last,
             FLAGS_process_real_time, FLAGS_frame_flip, FLAGS_frame_rotate, FLAGS_frames_repeat,
-            cameraSize, op::String(FLAGS_camera_parameter_path), FLAGS_frame_undistort, FLAGS_3d_views};
+            cameraSize, op::String(FLAGS_camera_parameter_path), FLAGS_frame_undistort, FLAGS_3d_views,
+            FLAGS_camera_trigger_mode};
         opWrapper.configure(wrapperStructInput);
         // Output (comment or use default argument to disable any output)
         const op::WrapperStructOutput wrapperStructOutput{

@@ -40,7 +40,7 @@ namespace op
             mProperties[(unsigned int)ProducerProperty::NumberViews] = numberViews;
             auto& mNumberViews = mProperties[(unsigned int)ProducerProperty::NumberViews];
             // Camera (distortion, intrinsic, and extrinsic) parameters
-            if (mType != ProducerType::FlirCamera)
+            if (mType != ProducerType::FlirCamera && mType != ProducerType::MindCamera)
             {
                 // Undistort image?
                 mCameraParameterReader.setUndistortImage(undistortImage);
@@ -411,7 +411,8 @@ namespace op
 
     std::shared_ptr<Producer> createProducer(
         const ProducerType producerType, const std::string& producerString, const Point<int>& cameraResolution,
-        const std::string& cameraParameterPath, const bool undistortImage, const int numberViews)
+        const std::string& cameraParameterPath, const bool undistortImage, const int numberViews,
+        const int cameraTriggerMode)
     {
         try
         {
@@ -432,6 +433,10 @@ namespace op
             else if (producerType == ProducerType::FlirCamera)
                 return std::make_shared<FlirReader>(
                     cameraParameterPath, cameraResolution, undistortImage, std::stoi(producerString));
+            // MindVision camera
+            else if (producerType == ProducerType::MindCamera)
+                return std::make_shared<MindReader>(cameraParameterPath, cameraResolution, undistortImage,
+                    std::stoi(producerString), cameraTriggerMode);
             // Webcam
             else if (producerType == ProducerType::Webcam)
             {

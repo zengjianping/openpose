@@ -334,6 +334,9 @@ namespace op
                 // Clean noisy outputs
                 if (noisyApproximatedM.norm() > 0.1)
                 {
+                    double minDiff = 10000.0;
+                    Eigen::Matrix4d minMatrix;
+
                     MsToAverageRobust.clear();
                     for (const auto& matrix : MsToAverage)
                     {
@@ -342,7 +345,13 @@ namespace op
                         {
                             for (auto row = 0 ; row < 3 ; row++)
                             {
-                                if (std::abs(matrix(col, row) - noisyApproximatedM(col, row)) > 0.25)
+                                double diff = std::abs(matrix(col, row) - noisyApproximatedM(col, row));
+                                if (minDiff > diff)
+                                {
+                                    minDiff = diff;
+                                    minMatrix = matrix;
+                                }
+                                if (diff> 0.25)
                                 {
                                     addElement = false;
                                     break;
@@ -351,6 +360,11 @@ namespace op
                         }
                         if (addElement)
                             MsToAverageRobust.push_back(matrix);
+                    }
+
+                    if (MsToAverage.size() > 0 && MsToAverageRobust.size() == 0)
+                    {
+                        MsToAverageRobust.push_back(minMatrix);
                     }
                 }
 
@@ -858,7 +872,7 @@ namespace op
     void estimateAndSaveIntrinsics(
         const Point<int>& gridInnerCorners, const float gridSquareSizeMm, const int flags,
         const std::string& outputParameterFolder, const std::string& imageFolder, const std::string& serialNumber,
-        const bool saveImagesWithCorners)
+        const bool saveImagesWithCorners, const bool undistortImages)
     {
         try
         {
@@ -957,6 +971,28 @@ namespace op
                     }
                 }
             }
+            if (undistortImages)
+            {
+                bool undistort_flag = cameraParameterReader.getUndistortImage();
+                cameraParameterReader.setUndistortImage(true);
+                const auto folderWhereSavingImages = imageFolder + "images_undistorted/";
+                // Create directory in case it did not exist
+                makeDirectory(folderWhereSavingImages);
+                // Save new images
+                const std::string extension{".png"};
+                for (auto i = 0u ; i < imageAndPaths.size(); i++)
+                {
+                    const auto& image = imageAndPaths.at(i).first;
+                    char buffer[1024];
+                    sprintf(buffer, "%s%06d_%s%s", folderWhereSavingImages.c_str(), i+1,
+                        serialNumber.c_str(), extension.c_str());
+                    const auto finalPath = buffer;
+                    auto opMat = OP_CV2OPMAT(image);
+                    cameraParameterReader.undistort(opMat);
+                    saveImage(opMat, finalPath);
+                }
+                cameraParameterReader.setUndistortImage(undistort_flag);
+            }
         }
         catch (const std::exception& e)
         {
@@ -974,8 +1010,8 @@ namespace op
             #ifdef USE_EIGEN
                 // For debugging
                 opLog("", Priority::Low, __LINE__, __FUNCTION__, __FILE__);
-                const auto coutResults = false;
-                // const auto coutResults = true;
+                //const auto coutResults = false;
+                const auto coutResults = true;
                 const bool coutAndImshowVerbose = false;
 
                 // Point<int> --> cv::Size
@@ -1232,6 +1268,9 @@ namespace op
                 for (auto cameraIndex = 0u; cameraIndex < numberCameras; cameraIndex++)
                 {
                     const cv::Mat cameraMatrix = cameraIntrinsics[cameraIndex] * cameraExtrinsics[cameraIndex];
+                    std::cout << "cameraIntrinsic: " << cameraIntrinsics[cameraIndex] << std::endl;
+                    std::cout << "cameraExtrinsic: " << cameraExtrinsics[cameraIndex] << std::endl;
+                    std::cout << "cameraMatrix: " << cameraMatrix << std::endl;
                     for (auto i = 0u; i < numberPoints; i++)
                     {
                         if (!BAValid(cameraIndex, i))
@@ -2258,20 +2297,25 @@ namespace op
                 // Run triangulation to obtain the initial 3D points
                 const auto initialPoints3D = reconstruct3DPoints(
                     points2DVectorsExtrinsic, cameraIntrinsics, cameraExtrinsics, numberCameras, imageSize);
+                opLog("Finished.");
 
                 auto refinedExtrinsics = cameraExtrinsics;
                 auto points3D = initialPoints3D;
                 Eigen::MatrixXd BAValid;
 
                 // Update inliers & outliers + Outlier removal + Bundle Adjustment with 1.0 threshold
+                opLog("Bundle adjustment...", Priority::High);
                 runBundleAdjustmentWithOutlierRemoval(
                     refinedExtrinsics, points3D, points2DVectorsExtrinsic, BAValid, cameraIntrinsics,
                     numberCameras, 1.0, true);
+                opLog("Finished.");
 
                 // Update inliers & outliers + Outlier removal + Bundle Adjustment with 0.5 threshold
+                opLog("Bundle adjustment...", Priority::High);
                 runBundleAdjustmentWithOutlierRemoval(
                     refinedExtrinsics, points3D, points2DVectorsExtrinsic, BAValid, cameraIntrinsics,
                     numberCameras, 0.5, false);
+                opLog("Finished.");
 
                 // Rescale the 3D points and translation based on the grid size
                 rescaleExtrinsicsAndPoints3D(

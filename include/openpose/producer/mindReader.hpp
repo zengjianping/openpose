@@ -16,10 +16,13 @@ namespace op
     {
     public:
         explicit MindReader(const std::string& cameraParametersPath, const Point<int>& cameraResolution,
-                            const bool undistortImage = true, const int cameraIndex = -1);
+            bool undistortImage=true, int cameraIndex=-1, int cameraTriggerMode=0);
         virtual ~MindReader();
 
     public:
+        std::vector<Matrix> getCameraMatrices();
+        std::vector<Matrix> getCameraExtrinsics();
+        std::vector<Matrix> getCameraIntrinsics();
         virtual std::string getNextFrameName();
         virtual bool isOpened() const;
         virtual void release();

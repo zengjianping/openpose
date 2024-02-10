@@ -112,7 +112,8 @@ namespace op
             auto producerSharedPtr = createProducer(
                 wrapperStructInput.producerType, wrapperStructInput.producerString.getStdString(),
                 wrapperStructInput.cameraResolution, wrapperStructInput.cameraParameterPath.getStdString(),
-                wrapperStructInput.undistortImage, wrapperStructInput.numberViews);
+                wrapperStructInput.undistortImage, wrapperStructInput.numberViews,
+                wrapperStructInput.cameraTriggerMode);
 
             // Editable arguments
             auto wrapperStructPose = wrapperStructPoseTemp;

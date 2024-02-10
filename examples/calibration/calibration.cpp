@@ -63,11 +63,12 @@ int openPoseDemo()
             // const auto flags = cv::CALIB_RATIONAL_MODEL | cv::CALIB_THIN_PRISM_MODEL | cv::CALIB_TILTED_MODEL; // 14
             // const auto saveImagesWithCorners = false;
             const auto saveImagesWithCorners = true;
+            const auto undistortImages = true;
             // Run calibration
             op::estimateAndSaveIntrinsics(
                 gridInnerCorners, gridSqureSizeMm, flags,
                 op::formatAsDirectory(FLAGS_camera_parameter_folder), calibrationImageDir, FLAGS_camera_serial_number,
-                saveImagesWithCorners);
+                saveImagesWithCorners, undistortImages);
             op::opLog("Intrinsic calibration completed!", op::Priority::High);
         }
 

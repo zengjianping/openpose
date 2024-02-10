@@ -22,6 +22,7 @@ namespace op
         virtual ~MindReaderImpl();
 
     public:
+        void initialize();
         void release();
         bool isOpened() const;
         Point<int> getResolution() const;
@@ -31,11 +32,12 @@ namespace op
         std::vector<Matrix> getRawFrames();
 
     protected:
+        void clear();
         void bufferingThread();
         std::vector<Matrix> acquireImages(const std::vector<Matrix>& opCameraIntrinsics,
-            const std::vector<Matrix>& opCameraDistorsions, const int cameraIndex = -1);
+            const std::vector<Matrix>& opCameraDistorsions);
         void readAndUndistortImage(int i, const cv::Mat& cvMatDistorted,
-            const cv::Mat& cameraIntrinsics = cv::Mat(), const cv::Mat& cameraDistorsions = cv::Mat());
+            const cv::Mat& cameraIntrinsics=cv::Mat(), const cv::Mat& cameraDistorsions=cv::Mat());
 
     protected:
         bool mInitialized = false;
@@ -49,177 +51,20 @@ namespace op
         std::vector<cv::Mat> mCvMats;
         // Undistortion
         bool mUndistortImage = false;
+        std::string mCameraParameterPath;
         std::vector<cv::Mat> mRemoveDistortionMaps1;
         std::vector<cv::Mat> mRemoveDistortionMaps2;
         CameraParameterReader mCameraParameterReader;
         // Thread
-        bool mThreadOpened;
+        bool mThreadOpened = false;
+        std::atomic<bool> mCloseThread;
         std::vector<cv::Mat> mBuffer;
         std::mutex mBufferMutex;
-        std::atomic<bool> mCloseThread;
         std::thread mThread;
 
     protected:
         DELETE_COPY(MindReaderImpl);
     };
-
-    MindReader::MindReader(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
-                           const bool undistortImage, const int cameraIndex) :
-        Producer{ProducerType::FlirCamera, cameraParameterPath, undistortImage, -1},
-        mFrameNameCounter{0ull}
-    {
-        try
-        {
-            upImpl = std::make_shared<MindReaderImpl>(cameraParameterPath, cameraResolution, undistortImage, cameraIndex);
-            // Get resolution
-            const auto resolution = upImpl->getResolution();
-            // Set resolution
-            set(cv::CAP_PROP_FRAME_WIDTH, resolution.x);
-            set(cv::CAP_PROP_FRAME_HEIGHT, resolution.y);
-        }
-        catch (const std::exception& e)
-        {
-            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
-        }
-    }
-
-    MindReader::~MindReader()
-    {
-        try
-        {
-            release();
-        }
-        catch (const std::exception& e)
-        {
-            errorDestructor(e.what(), __LINE__, __FUNCTION__, __FILE__);
-        }
-    }
-
-    std::string MindReader::getNextFrameName()
-    {
-        try
-        {
-            const unsigned long long stringLength = 12u;
-            return toFixedLengthString(mFrameNameCounter, stringLength);
-        }
-        catch (const std::exception& e)
-        {
-            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
-            return "";
-        }
-    }
-
-    bool MindReader::isOpened() const
-    {
-        try
-        {
-            return upImpl->isOpened();
-        }
-        catch (const std::exception& e)
-        {
-            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
-            return false;
-        }
-    }
-
-    void MindReader::release()
-    {
-        try
-        {
-            upImpl->release();
-        }
-        catch (const std::exception& e)
-        {
-            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
-        }
-    }
-
-    Matrix MindReader::getRawFrame()
-    {
-        try
-        {
-            return upImpl->getRawFrames().at(0);
-        }
-        catch (const std::exception& e)
-        {
-            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
-            return Matrix();
-        }
-    }
-
-    std::vector<Matrix> MindReader::getRawFrames()
-    {
-        try
-        {
-            mFrameNameCounter++; // Simple counter: 0,1,2,3,...
-            return upImpl->getRawFrames();
-        }
-        catch (const std::exception& e)
-        {
-            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
-            return {};
-        }
-    }
-
-    double MindReader::get(const int capProperty)
-    {
-        try
-        {
-            if (capProperty == cv::CAP_PROP_FRAME_WIDTH)
-            {
-                if (Producer::get(ProducerProperty::Rotation) == 0.
-                    || Producer::get(ProducerProperty::Rotation) == 180.)
-                    return mResolution.x;
-                else
-                    return mResolution.y;
-            }
-            else if (capProperty == cv::CAP_PROP_FRAME_HEIGHT)
-            {
-                if (Producer::get(ProducerProperty::Rotation) == 0.
-                    || Producer::get(ProducerProperty::Rotation) == 180.)
-                    return mResolution.y;
-                else
-                    return mResolution.x;
-            }
-            else if (capProperty == cv::CAP_PROP_POS_FRAMES)
-                return (double)mFrameNameCounter;
-            else if (capProperty == cv::CAP_PROP_FRAME_COUNT)
-                return -1.;
-            else if (capProperty == cv::CAP_PROP_FPS)
-                return -1.;
-            else
-            {
-                opLog("Unknown property.", Priority::Max, __LINE__, __FUNCTION__, __FILE__);
-                return -1.;
-            }
-        }
-        catch (const std::exception& e)
-        {
-            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
-            return 0.;
-        }
-    }
-
-    void MindReader::set(const int capProperty, const double value)
-    {
-        try
-        {
-            if (capProperty == cv::CAP_PROP_FRAME_WIDTH)
-                mResolution.x = {(int)value};
-            else if (capProperty == cv::CAP_PROP_FRAME_HEIGHT)
-                mResolution.y = {(int)value};
-            else if (capProperty == cv::CAP_PROP_POS_FRAMES)
-                opLog("This property is read-only.", Priority::Max, __LINE__, __FUNCTION__, __FILE__);
-            else if (capProperty == cv::CAP_PROP_FRAME_COUNT || capProperty == cv::CAP_PROP_FPS)
-                opLog("This property is read-only.", Priority::Max, __LINE__, __FUNCTION__, __FILE__);
-            else
-                opLog("Unknown property.", Priority::Max, __LINE__, __FUNCTION__, __FILE__);
-        }
-        catch (const std::exception& e)
-        {
-            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
-        }
-    }
 
     std::vector<std::string> getSerialNumbers(const tSdkCameraDevInfo* cameraList, int cameraCount)
     {
@@ -366,13 +211,75 @@ namespace op
 
     MindReaderImpl::MindReaderImpl(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
                     bool undistortImage, int cameraIndex, int cameraTriggerMode)
-            : mInitialized(false),  mCameraIndex(cameraIndex), mCameraTriggerMode(cameraTriggerMode),
-              mUndistortImage(undistortImage)
+    {
+        mCameraIndex = cameraIndex;
+        mCameraTriggerMode = cameraTriggerMode;
+        mUndistortImage = undistortImage;
+        mResolution = cameraResolution;
+        mCameraParameterPath = cameraParameterPath;
+
+        try
+        {
+            initialize();
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+        }
+    }
+
+    MindReaderImpl::~MindReaderImpl()
     {
         try
         {
-            // Clean previous unclosed builds (e.g., if core dumped in the previous code using the cameras)
             release();
+        }
+        catch (const std::exception& e)
+        {
+            errorDestructor(e.what(), __LINE__, __FUNCTION__, __FILE__);
+        }
+    }
+
+    void MindReaderImpl::clear()
+    {
+        try
+        {
+            if (mThreadOpened)
+            {
+                mCloseThread = true;
+                mThread.join();
+                mBuffer.clear();
+                mThreadOpened = false;
+            }
+
+            for (size_t i = 0; i < mCameraHandles.size(); i++)
+            {
+                int cameraHandle = mCameraHandles[i];
+                resetCameraTrigger(cameraHandle);
+                CameraUnInit(cameraHandle);
+            }
+            mCameraHandles.clear();
+            mCameraDevInfos.clear();
+            mSerialNumbers.clear();
+            mCvMats.clear();
+
+            mRemoveDistortionMaps1.clear();
+            mRemoveDistortionMaps2.clear();
+
+            mCameraCount = 0;
+            mInitialized = false;
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+        }
+    }
+
+    void MindReaderImpl::initialize()
+    {
+        try
+        {
+            clear();
 
             // Print application build information
             opLog(std::string{ "Application build date: " } + __DATE__ + " " + __TIME__, Priority::High);
@@ -381,6 +288,7 @@ namespace op
             tSdkCameraDevInfo cameraList[16];
             int cameraCount = 16;
             CameraSdkStatus status = CameraEnumerateDevice(cameraList, &cameraCount);
+
             if (status != CAMERA_STATUS_SUCCESS || cameraCount == 0)
             {
                 error("No cameras detected.", __LINE__, __FUNCTION__, __FILE__);
@@ -391,34 +299,53 @@ namespace op
                     + ", and camera index " + std::to_string(mCameraIndex) + " is too big!";
                 error(message, __LINE__, __FUNCTION__, __FILE__);
             }
+
+            opLog("Number of cameras detected: " + std::to_string(cameraCount), Priority::High);
+            if (mCameraIndex >= 0)
+            {
+                opLog("Only use camera " + std::to_string(mCameraIndex) + ".");
+                if (mCameraIndex > 0)
+                {
+                    cameraList[0] = cameraList[mCameraIndex];
+                }
+                mCameraCount = 1;
+            }
             else
             {
-                opLog("Number of cameras detected: " + std::to_string(cameraCount), Priority::High);
-                if (mCameraIndex >= 0)
-                {
-                    if (mCameraIndex > 0)
-                    {
-                        opLog("Only use camera " + std::to_string(mCameraIndex) + ".", Priority::High);
-                        cameraList[0] = cameraList[mCameraIndex];
-                    }
-                    cameraCount = 1;
-                }
-                // Print camera information
-                opLog("*** Camera information ***", Priority::High);
-                for(int i = 0; i < cameraCount; i++)
-                    printDeviceInfo(cameraList[i], i);
-
+                opLog("Use all cameras.");
+                mCameraCount = cameraCount;
             }
+
+            // Print camera information
+            opLog("*** Camera device information ***", Priority::High);
+            for(int i = 0; i < mCameraCount; i++)
+            {
+                printDeviceInfo(cameraList[i], i);
+            }
+            
+            // Retrieve device serial number for filename
+            mSerialNumbers = getSerialNumbers(&cameraList[0], mCameraCount);
+            for(int i = 0; i < mCameraCount; i++)
+            {
+                opLog("Camera " + std::to_string(i) + " serial number set to "
+                    + mSerialNumbers[i] + ".", Priority::High);
+            }
+
+            // Read camera parameters from SN
+            if (mUndistortImage)
+            {
+                mCameraParameterReader.readParameters(mCameraParameterPath, mSerialNumbers);
+            }
+
             opLog("Camera system initialized.", Priority::High);
 
             // Start all cameras
-            mCameraDevInfos.reserve(cameraCount);
-            mCameraHandles.reserve(cameraCount);
-            mCameraCount = cameraCount;
+            mCameraDevInfos.reserve(mCameraCount);
+            mCameraHandles.reserve(mCameraCount);
 
             for(int i = 0; i < mCameraCount; i++)
             {
-                opLog("Starting camera(" + std::to_string(i) + ")...");
+                opLog("Starting camera " + std::to_string(i) + "...");
 
                 // Initialize camera
                 int cameraHandle = 0;
@@ -445,19 +372,19 @@ namespace op
                 //CameraSetExposureTime(cameraHandle, 30 * 1000);
                 
                 // Configure trigger
-                if (cameraTriggerMode > 0)
+                if (mCameraTriggerMode > 0)
                     configCameraTrigger(cameraHandle);
                 else
                     resetCameraTrigger(cameraHandle);
 
                 // Set camera resolution
                 int offsetx, offsety, width, height;
-                if (cameraResolution.x > 0 && cameraResolution.y > 0)
+                if (mResolution.x > 0 && mResolution.y > 0)
                 {
-                    offsetx = (cameraCapbility.sResolutionRange.iWidthMax - cameraResolution.x) / 2;
-                    offsety = (cameraCapbility.sResolutionRange.iHeightMax - cameraResolution.y) / 2;
-                    width = cameraResolution.x;
-                    height = cameraResolution.y;
+                    offsetx = (cameraCapbility.sResolutionRange.iWidthMax - mResolution.x) / 2;
+                    offsety = (cameraCapbility.sResolutionRange.iHeightMax - mResolution.y) / 2;
+                    width = mResolution.x;
+                    height = mResolution.y;
                 }
                 else
                 {
@@ -483,35 +410,6 @@ namespace op
                 opLog("Camera " + std::to_string(i) + " started acquiring images...", Priority::High);
             }
 
-            // Retrieve device serial number for filename
-            opLog("\nReading (and sorting by) serial numbers...", Priority::High);
-            mSerialNumbers = getSerialNumbers(&cameraList[0], mCameraCount);
-            for (size_t i = 0; i < mSerialNumbers.size(); i++)
-            {
-                opLog("Camera " + std::to_string(i) + " serial number set to "
-                    + mSerialNumbers[i] + ".", Priority::High);
-            }
-            if (mCameraIndex >= 0)
-            {
-                opLog("Only using camera index " + std::to_string(mCameraIndex) + ", i.e., serial number "
-                    + mSerialNumbers[mCameraIndex] + ".", Priority::High);
-            }
-
-            // Read camera parameters from SN
-            if (mUndistortImage)
-            {
-                // If all images required
-                if (mCameraIndex < 0)
-                {
-                    mCameraParameterReader.readParameters(cameraParameterPath, mSerialNumbers);
-                }
-                else
-                {
-                    mCameraParameterReader.readParameters(cameraParameterPath,
-                        std::vector<std::string>(mSerialNumbers.size(), mSerialNumbers.at(mCameraIndex)));
-                }
-            }
-
             // Start buffering thread
             mThreadOpened = true;
             mCloseThread = false;
@@ -525,9 +423,7 @@ namespace op
             // Get resolution
             mResolution = Point<int>{cvMats[0].cols(), cvMats[0].rows()};
 
-            const std::string numberCameras = std::to_string(mCameraIndex < 0 ? mCameraCount : 1);
-            opLog("\nRunning for " + numberCameras + " out of " + std::to_string(mCameraCount)
-                + " camera(s)...\n\n*** IMAGE ACQUISITION ***\n", Priority::High);
+            opLog("*** IMAGE ACQUISITION ***", Priority::High);
 
             mInitialized = true;
         }
@@ -537,44 +433,14 @@ namespace op
         }
     }
 
-    MindReaderImpl::~MindReaderImpl()
-    {
-        try
-        {
-            release();
-        }
-        catch (const std::exception& e)
-        {
-            errorDestructor(e.what(), __LINE__, __FUNCTION__, __FILE__);
-        }
-    }
-
     void MindReaderImpl::release()
     {
         try
         {
             if (mInitialized)
             {
-                // Stop thread, close and join thread
-                if (mThreadOpened)
-                {
-                    mCloseThread = true;
-                    mThread.join();
-                }
-
-                // End acquisition for each camera
-                for (int i = 0; i < mCameraCount; i++)
-                {
-                    int cameraHandle = mCameraHandles[i];
-                    // Reset camera trigger
-                    resetCameraTrigger(cameraHandle);
-                    // close camera
-                    CameraUnInit(cameraHandle);
-                }
-
                 opLog("MindVision capture completed. Releasing cameras...", Priority::High);
-                // Setting the class as released
-                mInitialized = false;
+                clear();
                 opLog("Cameras released! Exiting program.", Priority::High);
             }
         }
@@ -614,12 +480,12 @@ namespace op
         try
         {
             // Sanity check
-            if (mUndistortImage && mCameraCount != mCameraParameterReader.getNumberCameras())
+            if (mUndistortImage && mCameraCount != (int)mCameraParameterReader.getNumberCameras())
                 error("The number of cameras must be the same as the INTRINSICS vector size.",
                     __LINE__, __FUNCTION__, __FILE__);
             // Return frames
             return acquireImages(mCameraParameterReader.getCameraIntrinsics(),
-                mCameraParameterReader.getCameraDistortions(), mCameraIndex);
+                mCameraParameterReader.getCameraDistortions());
         }
         catch (const std::exception& e)
         {
@@ -742,7 +608,7 @@ namespace op
 
     // This function acquires and displays images from each device.
     std::vector<Matrix> MindReaderImpl::acquireImages(const std::vector<Matrix>& opCameraIntrinsics,
-        const std::vector<Matrix>& opCameraDistorsions, const int cameraInde)
+        const std::vector<Matrix>& opCameraDistorsions)
     {
         try
         {
@@ -757,7 +623,7 @@ namespace op
             // single camera before grabbing any images from another.
 
             // Retrieve frame
-            auto cvMatRetrieved = false;
+            bool cvMatRetrieved = false;
             while (!cvMatRetrieved)
             {
                 // Retrieve frame
@@ -788,7 +654,6 @@ namespace op
             }
 
             mCvMats.clear();
-            // Convert to cv::Mat
             if (imagesExtracted)
             {
                 // Init anti-distortion matrices first time
@@ -798,60 +663,33 @@ namespace op
                     mRemoveDistortionMaps2.resize(cvMats.size());
                 mCvMats.resize(cvMats.size());
 
-                // All cameras
-                if (mCameraIndex < 0)
+                // Undistort image
+                if (mUndistortImage)
                 {
-                    // Undistort image
-                    if (mUndistortImage)
+                    std::vector<std::thread> threads(cvMats.size()-1);
+                    for (auto i = 0u; i < threads.size(); i++)
                     {
-                        std::vector<std::thread> threads(cvMats.size()-1);
-                        for (auto i = 0u; i < threads.size(); i++)
-                        {
-                            // Multi-thread option
-                            threads.at(i) = std::thread{&MindReaderImpl::readAndUndistortImage, this, i,
-                                cvMats.at(i), cameraIntrinsics.at(i), cameraDistorsions.at(i)};
-                            // // Single-thread option
-                            // readAndUndistortImage(i, imagePtrs.at(i), cameraIntrinsics.at(i), cameraDistorsions.at(i));
-                        }
-                        readAndUndistortImage((int)cvMats.size()-1, cvMats.back(),
-                            cameraIntrinsics.back(), cameraDistorsions.back());
-                
-                        // Close threads
-                        for (std::thread& thread : threads)
-                        {
-                            if (thread.joinable())
-                                thread.join();
-                        }
+                        // Multi-thread option
+                        threads.at(i) = std::thread{&MindReaderImpl::readAndUndistortImage, this, i,
+                            cvMats.at(i), cameraIntrinsics.at(i), cameraDistorsions.at(i)};
+                        // // Single-thread option
+                        // readAndUndistortImage(i, imagePtrs.at(i), cameraIntrinsics.at(i), cameraDistorsions.at(i));
                     }
-                    // Do not undistort image
-                    else
+                    readAndUndistortImage((int)cvMats.size()-1, cvMats.back(),
+                        cameraIntrinsics.back(), cameraDistorsions.back());
+            
+                    // Close threads
+                    for (std::thread& thread : threads)
                     {
-                        for (auto i = 0u; i < cvMats.size(); i++)
-                            readAndUndistortImage(i, cvMats[i]);
+                        if (thread.joinable())
+                            thread.join();
                     }
                 }
-                // Only 1 camera
+                // Do not undistort image
                 else
                 {
-                    // Sanity check
-                    if ((unsigned int)mCameraIndex >= cvMats.size())
-                        error("There are only " + std::to_string(cvMats.size())
-                                + " cameras, but you asked for the "
-                                + std::to_string(mCameraIndex+1) +"-th camera (i.e., `--flir_camera_index "
-                                + std::to_string(mCameraIndex) +"`), which doesn't exist. Note that the index is"
-                                + " 0-based.", __LINE__, __FUNCTION__, __FILE__);
-                    // Undistort image
-                    if (mUndistortImage)
-                    {
-                        readAndUndistortImage(mCameraIndex, cvMats.at(mCameraIndex),
-                            cameraIntrinsics.at(mCameraIndex), cameraDistorsions.at(mCameraIndex));
-                    }
-                    // Do not undistort image
-                    else
-                    {
-                        readAndUndistortImage(mCameraIndex, cvMats.at(mCameraIndex));
-                    }
-                    mCvMats = std::vector<cv::Mat>{mCvMats[mCameraIndex]};
+                    for (auto i = 0u; i < cvMats.size(); i++)
+                        readAndUndistortImage(i, cvMats[i]);
                 }
             }
             OP_CV2OPVECTORMAT(opMats, mCvMats)
@@ -861,6 +699,205 @@ namespace op
         {
             error(e.what(), __LINE__, __FUNCTION__, __FILE__);
             return {};
+        }
+    }
+
+
+    MindReader::MindReader(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
+            bool undistortImage, int cameraIndex, int cameraTriggerMode) :
+        Producer{ProducerType::MindCamera, cameraParameterPath, undistortImage, -1},
+        mFrameNameCounter{0ull}
+    {
+        try
+        {
+            upImpl = std::make_shared<MindReaderImpl>(cameraParameterPath,
+                 cameraResolution, undistortImage, cameraIndex, cameraTriggerMode);
+            // Get resolution
+            const auto resolution = upImpl->getResolution();
+            // Set resolution
+            set(cv::CAP_PROP_FRAME_WIDTH, resolution.x);
+            set(cv::CAP_PROP_FRAME_HEIGHT, resolution.y);
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+        }
+    }
+
+    MindReader::~MindReader()
+    {
+        try
+        {
+            release();
+        }
+        catch (const std::exception& e)
+        {
+            errorDestructor(e.what(), __LINE__, __FUNCTION__, __FILE__);
+        }
+    }
+
+    std::vector<Matrix> MindReader::getCameraMatrices()
+    {
+        try
+        {
+            return upImpl->getCameraMatrices();
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+            return {};
+        }
+    }
+
+    std::vector<Matrix> MindReader::getCameraExtrinsics()
+    {
+        try
+        {
+            return upImpl->getCameraExtrinsics();
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+            return {};
+        }
+    }
+
+    std::vector<Matrix> MindReader::getCameraIntrinsics()
+    {
+        try
+        {
+            return upImpl->getCameraIntrinsics();
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+            return {};
+        }
+    }
+
+    std::string MindReader::getNextFrameName()
+    {
+        try
+        {
+            const unsigned long long stringLength = 12u;
+            return toFixedLengthString(mFrameNameCounter, stringLength);
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+            return "";
+        }
+    }
+
+    bool MindReader::isOpened() const
+    {
+        try
+        {
+            return upImpl->isOpened();
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+            return false;
+        }
+    }
+
+    void MindReader::release()
+    {
+        try
+        {
+            upImpl->release();
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+        }
+    }
+
+    Matrix MindReader::getRawFrame()
+    {
+        try
+        {
+            return upImpl->getRawFrames().at(0);
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+            return Matrix();
+        }
+    }
+
+    std::vector<Matrix> MindReader::getRawFrames()
+    {
+        try
+        {
+            mFrameNameCounter++; // Simple counter: 0,1,2,3,...
+            return upImpl->getRawFrames();
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+            return {};
+        }
+    }
+
+    double MindReader::get(const int capProperty)
+    {
+        try
+        {
+            if (capProperty == cv::CAP_PROP_FRAME_WIDTH)
+            {
+                if (Producer::get(ProducerProperty::Rotation) == 0.
+                    || Producer::get(ProducerProperty::Rotation) == 180.)
+                    return mResolution.x;
+                else
+                    return mResolution.y;
+            }
+            else if (capProperty == cv::CAP_PROP_FRAME_HEIGHT)
+            {
+                if (Producer::get(ProducerProperty::Rotation) == 0.
+                    || Producer::get(ProducerProperty::Rotation) == 180.)
+                    return mResolution.y;
+                else
+                    return mResolution.x;
+            }
+            else if (capProperty == cv::CAP_PROP_POS_FRAMES)
+                return (double)mFrameNameCounter;
+            else if (capProperty == cv::CAP_PROP_FRAME_COUNT)
+                return -1.;
+            else if (capProperty == cv::CAP_PROP_FPS)
+                return -1.;
+            else
+            {
+                opLog("Unknown property.", Priority::Max, __LINE__, __FUNCTION__, __FILE__);
+                return -1.;
+            }
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+            return 0.;
+        }
+    }
+
+    void MindReader::set(const int capProperty, const double value)
+    {
+        try
+        {
+            if (capProperty == cv::CAP_PROP_FRAME_WIDTH)
+                mResolution.x = {(int)value};
+            else if (capProperty == cv::CAP_PROP_FRAME_HEIGHT)
+                mResolution.y = {(int)value};
+            else if (capProperty == cv::CAP_PROP_POS_FRAMES)
+                opLog("This property is read-only.", Priority::Max, __LINE__, __FUNCTION__, __FILE__);
+            else if (capProperty == cv::CAP_PROP_FRAME_COUNT || capProperty == cv::CAP_PROP_FPS)
+                opLog("This property is read-only.", Priority::Max, __LINE__, __FUNCTION__, __FILE__);
+            else
+                opLog("Unknown property.", Priority::Max, __LINE__, __FUNCTION__, __FILE__);
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
         }
     }
 }
