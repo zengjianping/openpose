@@ -95,7 +95,7 @@ distribute/
 *lmdb
 
 # Camera parameters
-*.xml
+#*.xml
 
 ######################### 3rd-party Folders and Zip Files #########################
 3rdparty/caffe/.git

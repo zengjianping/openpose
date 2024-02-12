@@ -1,7 +1,7 @@
 #!/bin/bash
 
-data_dir="datas/calibration/test01"
-grid_number="7x5"
+data_dir="datas/calibration/test02"
+grid_number="8x6"
 
 ./build/examples/calibration/calibration.bin \
     --mode 3 --omit_distortion \

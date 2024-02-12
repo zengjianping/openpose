@@ -1,8 +1,8 @@
 #!/bin/bash
 
-data_dir="datas/calibration/test01"
+data_dir="datas/calibration/test02"
 serial_no="camera02"
-grid_number="7x5"
+grid_number="8x6"
 
 ./build/examples/calibration/calibration.bin \
     --mode 1 \
