@@ -325,7 +325,7 @@ namespace op
                 // closed keeping the 0-index frame counting
                 if (mNumberEmptyFrames > 2
                     || (mType != ProducerType::FlirCamera && mType != ProducerType::IPCamera
-                        && mType != ProducerType::Webcam
+                        && mType != ProducerType::Webcam && mType != ProducerType::MindCamera
                         && get(CV_CAP_PROP_POS_FRAMES) >= get(CV_CAP_PROP_FRAME_COUNT)))
                 {
                     // Repeat video

@@ -74,7 +74,9 @@ namespace op
             for (int i = 0; i < cameraCount; i++)
             {
                 std::string serialNumber(cameraList[i].acProductName);
-                serialNumbers[i] = serialNumber + "-" + std::to_string(cameraList[i].uInstance);
+                //serialNumbers[i] = serialNumber + "-" + std::to_string(cameraList[i].uInstance);
+                //serialNumbers[i] = serialNumber + "-" + cameraList[i].acSn;
+                serialNumbers[i] = cameraList[i].acSn;
             }
 
             std::sort(serialNumbers.begin(), serialNumbers.end());
@@ -107,7 +109,7 @@ namespace op
     }
 
     // This function returns the camera to a normal state by turning off trigger mode.
-    void resetCameraTrigger(int cameraHandle)
+    /*void resetCameraTrigger(int cameraHandle)
     {
         try
         {
@@ -125,23 +127,23 @@ namespace op
         {
             error(e.what(), __LINE__, __FUNCTION__, __FILE__);
         }
-    }
+    }*/
 
     // This function configures the camera to use a trigger.
-    void configCameraTrigger(int cameraHandle)
+    void configCameraTrigger(int cameraHandle, int triggerMode)
     {
         try
         {
-            opLog("Turning on trigger...", Priority::High);
-            CameraSdkStatus status = CameraSetTriggerMode(cameraHandle, 1);
+            opLog("Setting camera trigger mode...", Priority::High);
+            CameraSdkStatus status = CameraSetTriggerMode(cameraHandle, triggerMode);
             if (status != CAMERA_STATUS_SUCCESS)
             {
-                std::string message = "Failed to turning on trigger mode!, Error code is "
+                std::string message = "Failed to set trigger mode!, Error code is "
                     + std::to_string(status) + ".";
                 error(message, __LINE__, __FUNCTION__, __FILE__);
             }
             CameraSetTriggerCount(cameraHandle, 1);
-            opLog("Trigger mode turned on.", Priority::High);
+            opLog("Trigger mode is set to " + std::to_string(triggerMode) + ".", Priority::High);
         }
         catch (const std::exception& e)
         {
@@ -255,7 +257,7 @@ namespace op
             for (size_t i = 0; i < mCameraHandles.size(); i++)
             {
                 int cameraHandle = mCameraHandles[i];
-                resetCameraTrigger(cameraHandle);
+                configCameraTrigger(cameraHandle, 0);
                 CameraUnInit(cameraHandle);
             }
             mCameraHandles.clear();
@@ -367,15 +369,15 @@ namespace op
                 else
                     CameraSetIspOutFormat(cameraHandle,CAMERA_MEDIA_TYPE_BGR8);
 
-                // Manual exposure
-                CameraSetAeState(cameraHandle, FALSE);
-                //CameraSetExposureTime(cameraHandle, 30 * 1000);
+                // Camera exposure
+                bool autoExposure = true;
+                CameraSetAeState(cameraHandle, autoExposure);
+                CameraSetAeTarget(cameraCount, 80);
+                CameraSetAnalogGain(cameraHandle, 100);
+                CameraSetExposureTime(cameraHandle, 30 * 1000);
                 
                 // Configure trigger
-                if (mCameraTriggerMode > 0)
-                    configCameraTrigger(cameraHandle);
-                else
-                    resetCameraTrigger(cameraHandle);
+                configCameraTrigger(cameraHandle, mCameraTriggerMode);
 
                 // Set camera resolution
                 int offsetx, offsety, width, height;
@@ -392,6 +394,8 @@ namespace op
                     offsety = 0;
                     width = cameraCapbility.sResolutionRange.iWidthMax;
                     height = cameraCapbility.sResolutionRange.iHeightMax;
+                    mResolution.x = cameraCapbility.sResolutionRange.iWidthMax;
+                    mResolution.y = cameraCapbility.sResolutionRange.iHeightMax;
                 }
                 SetCameraResolution(cameraHandle, offsetx, offsety, width, height);
 
@@ -422,6 +426,7 @@ namespace op
                 error("Cameras could not be opened.", __LINE__, __FUNCTION__, __FILE__);
             // Get resolution
             mResolution = Point<int>{cvMats[0].cols(), cvMats[0].rows()};
+            opLog("Video resolution: " + std::to_string(mResolution.x) + "x" + std::to_string(mResolution.y));
 
             opLog("*** IMAGE ACQUISITION ***", Priority::High);
 
@@ -499,13 +504,17 @@ namespace op
         try
         {
             mCloseThread = false;
-            std::vector<cv::Mat> cvMats(mCameraCount);
 
             while (!mCloseThread)
             {
+                std::vector<cv::Mat> cvMats(mCameraCount);
+                
                 // Trigger
-                for (int i = 0; i < mCameraCount; i++)
-                    grabNextImageByTrigger(mCameraHandles[i]);
+                if (mCameraTriggerMode == 1)
+                {
+                    for (int i = 0; i < mCameraCount; i++)
+                        grabNextImageByTrigger(mCameraHandles[i]);
+                }
 
                 // Get frame
                 bool imagesExtracted = true;
@@ -515,19 +524,22 @@ namespace op
                     tSdkFrameHead sFrameInfo;
                     BYTE* pbyBuffer = nullptr;
 
-                    unsigned char*pRgbBuffer = (unsigned char*)malloc(mResolution.x*mResolution.y*3);
+                    //unsigned char*pRgbBuffer = (unsigned char*)malloc(mResolution.x*mResolution.y*3);
+                    CameraSdkStatus status = CameraGetImageBuffer(cameraHandle, &sFrameInfo, &pbyBuffer, 1000);
 
-                    if(CameraGetImageBuffer(cameraHandle, &sFrameInfo, &pbyBuffer, 1000) == CAMERA_STATUS_SUCCESS)
+                    if(status == CAMERA_STATUS_SUCCESS)
                     {
-                        CameraImageProcess(cameraHandle, pbyBuffer, pRgbBuffer, &sFrameInfo);
-                        
                         cv::Mat matImage(cv::Size(sFrameInfo.iWidth, sFrameInfo.iHeight), 
-                            sFrameInfo.uiMediaType == CAMERA_MEDIA_TYPE_MONO8 ? CV_8UC1 : CV_8UC3,
-                            pRgbBuffer);
+                            sFrameInfo.uiMediaType == CAMERA_MEDIA_TYPE_MONO8 ? CV_8UC1 : CV_8UC3);
+                        CameraImageProcess(cameraHandle, pbyBuffer, matImage.data, &sFrameInfo);
+                        cvMats.at(i) = matImage;
+            			CameraReleaseImageBuffer(cameraHandle, pbyBuffer);
                     }
                     else
                     {
-                        delete pRgbBuffer;
+                        std::string message = "Failed to capture image!, Error code is " + std::to_string(status) + ".";
+                        opLog(message);
+                        //delete pRgbBuffer;
                         imagesExtracted = false;
                     }
                 }
@@ -539,6 +551,7 @@ namespace op
                     lock.unlock();
                     std::this_thread::sleep_for(std::chrono::microseconds{1});
                 }
+
             }
         }
         catch (const std::exception& e)
