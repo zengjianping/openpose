@@ -16,7 +16,7 @@ namespace op
     {
     public:
         explicit MindReader(const std::string& cameraParametersPath, const Point<int>& cameraResolution,
-            bool undistortImage=true, int cameraIndex=-1, int cameraTriggerMode=0);
+            bool undistortImage=true, int cameraIndex=-1, int cameraTriggerMode=0, double captureFps=-1);
         virtual ~MindReader();
 
     public:

@@ -41,13 +41,23 @@ namespace op
             // Record cv::mat
             if (!matOutputDatas.empty())
             {
-                // File path (no extension)
-                const auto fileNameNoExtension = getNextFileName(fileName) + "_rendered";
-
-                // Get names for each image
                 std::vector<std::string> fileNames(matOutputDatas.size());
-                for (auto i = 0u; i < fileNames.size(); i++)
-                    fileNames[i] = {fileNameNoExtension + (i != 0 ? "_" + std::to_string(i) : "") + "." + mImageFormat};
+
+                if (matOutputDatas.size() > 0)
+                {
+                    const auto fileNameNoExtension = getNextFileName(fileName) + "_camera";
+                    // Get names for each image
+                    for (auto i = 0u; i < fileNames.size(); i++)
+                        fileNames[i] = {fileNameNoExtension + std::to_string(i) + "." + mImageFormat};
+                }
+                else
+                {
+                    // File path (no extension)
+                    const auto fileNameNoExtension = getNextFileName(fileName) + "_rendered";
+                    // Get names for each image
+                    for (auto i = 0u; i < fileNames.size(); i++)
+                        fileNames[i] = {fileNameNoExtension + (i != 0 ? "_" + std::to_string(i) : "") + "." + mImageFormat};
+                }
 
                 // Save each image
                 for (auto i = 0u; i < matOutputDatas.size(); i++)

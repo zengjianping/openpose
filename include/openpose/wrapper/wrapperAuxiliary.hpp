@@ -113,7 +113,7 @@ namespace op
                 wrapperStructInput.producerType, wrapperStructInput.producerString.getStdString(),
                 wrapperStructInput.cameraResolution, wrapperStructInput.cameraParameterPath.getStdString(),
                 wrapperStructInput.undistortImage, wrapperStructInput.numberViews,
-                wrapperStructInput.cameraTriggerMode);
+                wrapperStructInput.cameraTriggerMode, wrapperStructInput.captureFps);
 
             // Editable arguments
             auto wrapperStructPose = wrapperStructPoseTemp;

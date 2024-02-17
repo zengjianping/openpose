@@ -92,6 +92,7 @@ namespace op
         int numberViews;
 
         int cameraTriggerMode;
+        double captureFps;
 
         /**
          * Constructor of the struct.
@@ -105,7 +106,8 @@ namespace op
             const bool realTimeProcessing = false, const bool frameFlip = false, const int frameRotate = 0,
             const bool framesRepeat = false, const Point<int>& cameraResolution = Point<int>{-1,-1},
             const String& cameraParameterPath = "models/cameraParameters/",
-            const bool undistortImage = false, const int numberViews = -1, const int cameraTriggerMode = 0);
+            const bool undistortImage = false, const int numberViews = -1, const int cameraTriggerMode = 0,
+            const double captureFps = -1);
     };
 }
 

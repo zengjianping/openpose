@@ -18,7 +18,7 @@ namespace op
          * cameraIndex = -1 means that all cameras are taken
          */
         explicit MindReaderImpl(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
-                    bool undistortImage, int cameraIndex=-1, int cameraTriggerMode=0);
+                    bool undistortImage, int cameraIndex=-1, int cameraTriggerMode=0, double captureFps=-1);
         virtual ~MindReaderImpl();
 
     public:
@@ -44,6 +44,8 @@ namespace op
         int mCameraCount = 0;
         int mCameraIndex = -1;
         int mCameraTriggerMode = 0;
+        double mCaptureFps = -1;
+        bool mZoomAfterCapture = true;
         Point<int> mResolution;
         std::vector<int> mCameraHandles;
         std::vector<tSdkCameraDevInfo> mCameraDevInfos;
@@ -78,8 +80,7 @@ namespace op
                 //serialNumbers[i] = serialNumber + "-" + cameraList[i].acSn;
                 serialNumbers[i] = cameraList[i].acSn;
             }
-
-            std::sort(serialNumbers.begin(), serialNumbers.end());
+            //std::sort(serialNumbers.begin(), serialNumbers.end());
 
             return serialNumbers;
         }
@@ -193,7 +194,6 @@ namespace op
         sRoiResolution.iHeight = height;
         sRoiResolution.iHeightFOV = height;
         
-        // 视场偏移
         // Field of view offset
         sRoiResolution.iHOffsetFOV = offsetx;
         sRoiResolution.iVOffsetFOV = offsety;
@@ -211,14 +211,53 @@ namespace op
         return CameraSetImageResolution(cameraHandle, &sRoiResolution);
     }
 
+    int SetCameraResolutionEx(int cameraHandle, int width, int height, int widthMax, int heightMax)
+    {
+        tSdkImageResolution sRoiResolution = { 0 };
+        
+        // Set to 0xff for custom resolution, set to 0 to N for select preset resolution
+        sRoiResolution.iIndex = 0xff;
+        
+        // iWidthFOV represents the camera's field of view width, iWidth represents the camera's
+        // actual output width. In most cases iWidthFOV=iWidth. Some special resolution modes such
+        // as BIN2X2:iWidthFOV=2*iWidth indicate that the field of view is twice the actual output width
+        sRoiResolution.iWidth = width;
+        sRoiResolution.iWidthFOV = widthMax;
+        
+        // height, refer to the description of the width above
+        sRoiResolution.iHeight = height;
+        sRoiResolution.iHeightFOV = heightMax;
+        
+        // Field of view offset
+        sRoiResolution.iHOffsetFOV = 0;
+        sRoiResolution.iVOffsetFOV = 0;
+        
+        // ISP software zoom width and height, all 0 means not zoom
+        sRoiResolution.iWidthZoomSw = 0;
+        sRoiResolution.iHeightZoomSw = 0;
+        
+        // ISP hardware zoom width and height, all 0 means not zoom
+        sRoiResolution.iWidthZoomHd = width;
+        sRoiResolution.iHeightZoomHd = height;
+        
+        // BIN SKIP mode setting (requires camera hardware support)
+        sRoiResolution.uBinAverageMode = 0;
+        sRoiResolution.uBinSumMode = 0;
+        sRoiResolution.uResampleMask = 0;
+        sRoiResolution.uSkipMode = 0;
+        
+        return CameraSetImageResolution(cameraHandle, &sRoiResolution);
+    }
+
     MindReaderImpl::MindReaderImpl(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
-                    bool undistortImage, int cameraIndex, int cameraTriggerMode)
+                    bool undistortImage, int cameraIndex, int cameraTriggerMode, double captureFps)
     {
         mCameraIndex = cameraIndex;
         mCameraTriggerMode = cameraTriggerMode;
         mUndistortImage = undistortImage;
         mResolution = cameraResolution;
         mCameraParameterPath = cameraParameterPath;
+        mCaptureFps = captureFps;
 
         try
         {
@@ -288,7 +327,7 @@ namespace op
 
             // Enumerate all cameras
             tSdkCameraDevInfo cameraList[16];
-            int cameraCount = 16;
+            int cameraCount = 15;
             CameraSdkStatus status = CameraEnumerateDevice(cameraList, &cameraCount);
 
             if (status != CAMERA_STATUS_SUCCESS || cameraCount == 0)
@@ -301,6 +340,8 @@ namespace op
                     + ", and camera index " + std::to_string(mCameraIndex) + " is too big!";
                 error(message, __LINE__, __FUNCTION__, __FILE__);
             }
+            std::sort(&cameraList[0], &cameraList[cameraCount], [](tSdkCameraDevInfo& a, tSdkCameraDevInfo& b)
+                                                                {return strcmp(a.acSn, b.acSn) <= 0;});
 
             opLog("Number of cameras detected: " + std::to_string(cameraCount), Priority::High);
             if (mCameraIndex >= 0)
@@ -373,29 +414,29 @@ namespace op
                 bool autoExposure = true;
                 CameraSetAeState(cameraHandle, autoExposure);
                 CameraSetAeTarget(cameraCount, 80);
-                CameraSetAnalogGain(cameraHandle, 100);
-                CameraSetExposureTime(cameraHandle, 30 * 1000);
+                CameraSetAnalogGain(cameraHandle, 80);
+                CameraSetExposureTime(cameraHandle, 20 * 1000);
                 
                 // Configure trigger
                 configCameraTrigger(cameraHandle, mCameraTriggerMode);
 
                 // Set camera resolution
-                int offsetx, offsety, width, height;
-                if (mResolution.x > 0 && mResolution.y > 0)
+                int widthMax = cameraCapbility.sResolutionRange.iWidthMax;
+                int heightMax = cameraCapbility.sResolutionRange.iHeightMax;
+                int offsetx = 0, offsety = 0;
+                int width = widthMax, height = heightMax;
+
+                if (mResolution.x <= 0 || mResolution.y <= 0)
                 {
-                    offsetx = (cameraCapbility.sResolutionRange.iWidthMax - mResolution.x) / 2;
-                    offsety = (cameraCapbility.sResolutionRange.iHeightMax - mResolution.y) / 2;
+                    mResolution.x = widthMax;
+                    mResolution.y = heightMax;
+                }
+                if (!mZoomAfterCapture)
+                {
+                    offsetx = (widthMax - mResolution.x) / 2;
+                    offsety = (heightMax - mResolution.y) / 2;
                     width = mResolution.x;
                     height = mResolution.y;
-                }
-                else
-                {
-                    offsetx = 0;
-                    offsety = 0;
-                    width = cameraCapbility.sResolutionRange.iWidthMax;
-                    height = cameraCapbility.sResolutionRange.iHeightMax;
-                    mResolution.x = cameraCapbility.sResolutionRange.iWidthMax;
-                    mResolution.y = cameraCapbility.sResolutionRange.iHeightMax;
                 }
                 SetCameraResolution(cameraHandle, offsetx, offsety, width, height);
 
@@ -505,6 +546,10 @@ namespace op
         {
             mCloseThread = false;
 
+            std::chrono::time_point<std::chrono::steady_clock> start_time, capture_time, current_time;
+            start_time = std::chrono::steady_clock::now();
+            int64_t capture_count = 0;
+
             while (!mCloseThread)
             {
                 std::vector<cv::Mat> cvMats(mCameraCount);
@@ -529,10 +574,15 @@ namespace op
 
                     if(status == CAMERA_STATUS_SUCCESS)
                     {
-                        cv::Mat matImage(cv::Size(sFrameInfo.iWidth, sFrameInfo.iHeight), 
+                        int imgWidth = sFrameInfo.iWidth;
+                        int imgHeight = sFrameInfo.iHeight;
+                        cv::Mat matImage(cv::Size(imgWidth, imgHeight), 
                             sFrameInfo.uiMediaType == CAMERA_MEDIA_TYPE_MONO8 ? CV_8UC1 : CV_8UC3);
                         CameraImageProcess(cameraHandle, pbyBuffer, matImage.data, &sFrameInfo);
-                        cvMats.at(i) = matImage;
+                        if (imgWidth != mResolution.x || imgHeight != mResolution.y)
+                            cv::resize(matImage, cvMats.at(i), cv::Size(mResolution.x, mResolution.y));
+                        else
+                            cvMats.at(i) = matImage;
             			CameraReleaseImageBuffer(cameraHandle, pbyBuffer);
                     }
                     else
@@ -547,11 +597,25 @@ namespace op
                 if (imagesExtracted)
                 {
                     std::unique_lock<std::mutex> lock{mBufferMutex};
+                    //static int cnt = 0;
+                    //opLog("Product images: " + std::to_string(++cnt));
                     std::swap(mBuffer, cvMats);
                     lock.unlock();
-                    std::this_thread::sleep_for(std::chrono::microseconds{1});
+                    //std::this_thread::sleep_for(std::chrono::microseconds{1});
                 }
 
+                if (mCaptureFps > 0.)
+                {
+                    int64_t microseconds = 1000000 * ++capture_count / mCaptureFps;
+                    capture_time = start_time + std::chrono::microseconds(microseconds);
+                    current_time = std::chrono::steady_clock::now();
+                    if (capture_time > current_time)
+                        std::this_thread::sleep_until(capture_time);
+                }
+                else
+                {
+                    std::this_thread::sleep_for(std::chrono::microseconds{1});
+                }
             }
         }
         catch (const std::exception& e)
@@ -643,6 +707,8 @@ namespace op
                 std::unique_lock<std::mutex> lock{mBufferMutex};
                 if (!mBuffer.empty())
                 {
+                    //static int cnt = 0;
+                    //opLog("Consume images: " + std::to_string(++cnt));
                     std::swap(cvMats, mBuffer);
                     cvMatRetrieved = true;
                 }
@@ -717,14 +783,14 @@ namespace op
 
 
     MindReader::MindReader(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
-            bool undistortImage, int cameraIndex, int cameraTriggerMode) :
+            bool undistortImage, int cameraIndex, int cameraTriggerMode, double captureFps) :
         Producer{ProducerType::MindCamera, cameraParameterPath, undistortImage, -1},
         mFrameNameCounter{0ull}
     {
         try
         {
-            upImpl = std::make_shared<MindReaderImpl>(cameraParameterPath,
-                 cameraResolution, undistortImage, cameraIndex, cameraTriggerMode);
+            upImpl = std::make_shared<MindReaderImpl>(cameraParameterPath, cameraResolution,
+                undistortImage, cameraIndex, cameraTriggerMode, captureFps);
             // Get resolution
             const auto resolution = upImpl->getResolution();
             // Set resolution

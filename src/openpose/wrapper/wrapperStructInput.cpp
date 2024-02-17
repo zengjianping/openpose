@@ -7,7 +7,7 @@ namespace op
         const unsigned long long frameStep_, const unsigned long long frameLast_, const bool realTimeProcessing_,
         const bool frameFlip_, const int frameRotate_, const bool framesRepeat_, const Point<int>& cameraResolution_,
         const String& cameraParameterPath_, const bool undistortImage_, const int numberViews_,
-        const int cameraTriggerMode_) :
+        const int cameraTriggerMode_, const double captureFps_) :
         producerType{producerType_},
         producerString{producerString_},
         frameFirst{frameFirst_},
@@ -21,7 +21,8 @@ namespace op
         cameraParameterPath{cameraParameterPath_},
         undistortImage{undistortImage_},
         numberViews{numberViews_},
-        cameraTriggerMode(cameraTriggerMode_)
+        cameraTriggerMode(cameraTriggerMode_),
+        captureFps(captureFps_)
     {
     }
 }

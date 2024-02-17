@@ -28,6 +28,7 @@ DEFINE_int32(profile_speed,             1000,           "If PROFILER_ENABLED was
 #ifndef OPENPOSE_FLAGS_DISABLE_POSE
 #ifndef OPENPOSE_FLAGS_DISABLE_PRODUCER
 // Producer
+DEFINE_double(capture_fps,              -1.,            "Video capture fps.");
 DEFINE_int32(camera,                    -1,             "The camera index for cv::VideoCapture. Integer in the range [0, 9]. Select a negative"
                                                         " number (by default), to auto-detect and open the first available camera.");
 DEFINE_string(camera_resolution,        "-1x-1",        "Set the camera resolution (either `--camera` or `--flir_camera`). `-1x-1` will use the"

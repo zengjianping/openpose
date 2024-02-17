@@ -54,7 +54,7 @@ namespace op
     OP_API void saveImage(
         const Matrix& matrix, const std::string& fullFilePath,
         const std::vector<int>& openCvCompressionParams
-            = {getCvImwriteJpegQuality(), 100, getCvImwritePngCompression(), 9});
+            = {getCvImwriteJpegQuality(), 100, getCvImwritePngCompression(), 3});
 
     OP_API Matrix loadImage(const std::string& fullFilePath, const int openCvFlags = getCvLoadImageAnydepth());
 
