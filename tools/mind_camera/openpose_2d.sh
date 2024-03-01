@@ -2,5 +2,7 @@
 
 ./build/examples/openpose/openpose.bin \
     --mind_camera --mind_camera_index -1 --camera_trigger_mode 1 \
-    --body 1 --num_gpu 1 --camera_resolution "1224x1024" --capture_fps 5
+    --capture_fps -1 --batch_process --net_resolution "-1x192" \
+    --camera_resolution "1224x1024" \
+    --body 1 --num_gpu 1  --profile_speed 100
 

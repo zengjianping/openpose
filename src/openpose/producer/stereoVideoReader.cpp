@@ -13,7 +13,7 @@ namespace op
         try
         {
             videoFilePaths = getFilesOnDirectory(videoDir, Extensions::Videos);
-            return videoFilePaths.size() == (size_t)numberViews;
+            return videoFilePaths.size() > 0 && (numberViews < 0 || videoFilePaths.size() == (size_t)numberViews);
         }
         catch(const std::exception& e)
         {
@@ -27,7 +27,7 @@ namespace op
         try
         {
             imageDirPaths = getSubdirsOnDirectory(videoDir);
-            return imageDirPaths.size() == (size_t)numberViews;
+            return imageDirPaths.size() > 0 && (numberViews < 0 || imageDirPaths.size() == (size_t)numberViews);
         }
         catch(const std::exception& e)
         {
