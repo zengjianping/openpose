@@ -24,6 +24,9 @@ namespace op
 
         void initializationOnThread();
 
+        void forwardData(const std::vector<Array<float>>& inputDatas, std::vector<Array<float>>& outputDatas,
+                         const long long frameId);
+
         void forwardPass(const std::vector<Array<float>>& inputNetData,
                          const Point<int>& inputDataSize,
                          const std::vector<double>& scaleRatios,

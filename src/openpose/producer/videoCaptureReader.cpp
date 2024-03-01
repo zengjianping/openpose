@@ -1,5 +1,4 @@
 #include <openpose/producer/videoCaptureReader.hpp>
-#include <iostream>
 #include <openpose/utilities/fastMath.hpp>
 #include <openpose/utilities/string.hpp>
 #include <openpose_private/utilities/openCvMultiversionHeaders.hpp>

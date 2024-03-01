@@ -11,7 +11,7 @@ namespace op
     class WPoseExtractor : public Worker<TDatums>
     {
     public:
-        explicit WPoseExtractor(const std::shared_ptr<PoseExtractor>& poseExtractorSharedPtr);
+        explicit WPoseExtractor(const std::shared_ptr<PoseExtractor>& poseExtractorSharedPtr, bool batchProcessData=false);
 
         virtual ~WPoseExtractor();
 
@@ -21,6 +21,7 @@ namespace op
 
     private:
         std::shared_ptr<PoseExtractor> spPoseExtractor;
+        bool mBatchProcessData;
 
         DELETE_COPY(WPoseExtractor);
     };
@@ -35,8 +36,8 @@ namespace op
 namespace op
 {
     template<typename TDatums>
-    WPoseExtractor<TDatums>::WPoseExtractor(const std::shared_ptr<PoseExtractor>& poseExtractorSharedPtr) :
-        spPoseExtractor{poseExtractorSharedPtr}
+    WPoseExtractor<TDatums>::WPoseExtractor(const std::shared_ptr<PoseExtractor>& poseExtractorSharedPtr, bool batchProcessData) :
+        spPoseExtractor{poseExtractorSharedPtr}, mBatchProcessData{batchProcessData}
     {
     }
 
@@ -69,7 +70,17 @@ namespace op
                 opLogIfDebug("", Priority::Low, __LINE__, __FUNCTION__, __FILE__);
                 // Profiling speed
                 const auto profilerKey = Profiler::timerInit(__LINE__, __FUNCTION__, __FILE__);
+
                 // Extract people pose
+                if (mBatchProcessData && tDatums->size() > 1) {
+                    std::vector<Array<float>> inputDatas, outputDatas;
+                    for (size_t i = 0; i < tDatums->size(); i++)
+                        inputDatas.push_back(tDatums->at(i)->inputNetData[0]);
+                    spPoseExtractor->forwardData(inputDatas, outputDatas, tDatums->at(0)->id);
+                    for (size_t i = 0; i < tDatums->size(); i++)
+                        tDatums->at(i)->poseNetOutput = outputDatas[i];
+                }
+
                 for (auto i = 0u ; i < tDatums->size() ; i++)
                 // for (auto& tDatum : *tDatums)
                 {

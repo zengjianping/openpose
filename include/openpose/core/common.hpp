@@ -6,6 +6,8 @@
 #include <memory> // std::shared_ptr, std::unique_ptr
 #include <string>
 #include <vector>
+#include <iostream>  // NOLINT(readability/streams)
+#include <limits> // std::numeric_limits
 // OpenPose most used classes
 #include <openpose/core/array.hpp>
 #include <openpose/core/arrayCpuGpu.hpp>

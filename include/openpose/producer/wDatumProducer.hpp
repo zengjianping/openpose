@@ -13,7 +13,7 @@ namespace op
     class WDatumProducer : public WorkerProducer<std::shared_ptr<std::vector<std::shared_ptr<TDatum>>>>
     {
     public:
-        explicit WDatumProducer(const std::shared_ptr<DatumProducer<TDatum>>& datumProducer);
+        explicit WDatumProducer(const std::shared_ptr<DatumProducer<TDatum>>& datumProducer, bool batchProcessData=false);
 
         virtual ~WDatumProducer();
 
@@ -24,6 +24,7 @@ namespace op
     private:
         std::shared_ptr<DatumProducer<TDatum>> spDatumProducer;
         std::queue<std::shared_ptr<std::vector<std::shared_ptr<TDatum>>>> mQueuedElements;
+        bool mBatchProcessData;
 
         DELETE_COPY(WDatumProducer);
     };
@@ -39,8 +40,8 @@ namespace op
 {
     template<typename TDatum>
     WDatumProducer<TDatum>::WDatumProducer(
-        const std::shared_ptr<DatumProducer<TDatum>>& datumProducer) :
-        spDatumProducer{datumProducer}
+        const std::shared_ptr<DatumProducer<TDatum>>& datumProducer, bool batchProcessData) :
+        spDatumProducer{datumProducer}, mBatchProcessData(batchProcessData)
     {
     }
 
@@ -82,7 +83,7 @@ namespace op
             }
             // Equivalent to WQueueSplitter
             // Queued elements - Multiple views --> Split views into different shared pointers
-            if (tDatums != nullptr && tDatums->size() > 1)
+            if (tDatums != nullptr && tDatums->size() > 1 && !mBatchProcessData)
             {
                 // Add tDatums to mQueuedElements
                 for (auto i = 0u ; i < tDatums->size() ; i++)

@@ -21,6 +21,8 @@ namespace op
 
         void initializationOnThread();
 
+        virtual void forwardData(const std::vector<Array<float>>& inputDatas, std::vector<Array<float>>& outputDatas) = 0;
+
         virtual void forwardPass(
             const std::vector<Array<float>>& inputNetData, const Point<int>& inputDataSize,
             const std::vector<double>& scaleRatios = {1.f}, const Array<float>& poseNetOutput = Array<float>{}) = 0;

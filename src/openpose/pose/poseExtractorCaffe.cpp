@@ -1,5 +1,4 @@
 #include <openpose/pose/poseExtractorCaffe.hpp>
-#include <limits> // std::numeric_limits
 #include <openpose/gpu/cuda.hpp>
 #include <openpose/pose/poseParameters.hpp>
 #include <openpose/utilities/check.hpp>
@@ -129,6 +128,7 @@ namespace op
             spBodyPartConnectorCaffe{std::make_shared<BodyPartConnectorCaffe<float>>()},
             spMaximumCaffe{(TOP_DOWN_REFINEMENT ? std::make_shared<MaximumCaffe<float>>() : nullptr)}
         #endif
+        , mBatchProcessed{false}
     {
         try
         {
@@ -197,6 +197,47 @@ namespace op
         }
     }
 
+    void PoseExtractorCaffe::forwardData(const std::vector<Array<float>>& inputDatas, std::vector<Array<float>>& outputDatas)
+    {
+        //const auto REPS = 1;
+        //double timeNormalize0 = 0.;
+        //OP_PROFILE_INIT(REPS);
+
+        const Array<float>& inputNetData = inputDatas[0];
+        int c = inputNetData.getSize(1);
+        int h = inputNetData.getSize(2);
+        int w = inputNetData.getSize(3);
+        int dataSize = c * h * w;
+        std::vector<int> sizes = {(int)inputDatas.size(), c, h, w};
+
+        Array<float> inputData(sizes);
+        for (auto i = 0u ; i < inputDatas.size(); i++)
+        {
+            const Array<float>& inputNetData = inputDatas[i];
+            std::copy(inputNetData.getConstPtr(), inputNetData.getConstPtr() + dataSize,
+                inputData.getPtr() + dataSize * i);
+        }
+
+        spNets.at(0)->forwardPass(inputData);
+
+        Array<float> blob(spCaffeNetOutputBlobs[0]->shape(), spCaffeNetOutputBlobs[0]->mutable_cpu_data());
+        c = blob.getSize(1);
+        h = blob.getSize(2);
+        w = blob.getSize(3);
+        dataSize = c * h * w;
+        for (auto i = 0u ; i < inputDatas.size(); i++)
+        {
+            Array<float> outputData(std::vector<int>{1,c,h,w});
+            std::copy(blob.getPtr() + dataSize * i, blob.getPtr() + dataSize * (i+1),
+                outputData.getPtr());
+            outputDatas.push_back(outputData);
+        }
+        mBatchProcessed = true;
+
+        //OP_PROFILE_END(timeNormalize0, 1e3, REPS);
+        //opLog("0(caf)= " + std::to_string(timeNormalize0) + "ms");
+    }
+
     void PoseExtractorCaffe::forwardPass(
         const std::vector<Array<float>>& inputNetData, const Point<int>& inputDataSize,
         const std::vector<double>& scaleInputToNetInputs, const Array<float>& poseNetOutput)
@@ -204,12 +245,13 @@ namespace op
         try
         {
             #ifdef USE_CAFFE
-                // const auto REPS = 1;
-                // double timeNormalize1 = 0.;
-                // double timeNormalize2 = 0.;
-                // double timeNormalize3 = 0.;
-                // double timeNormalize4 = 0.;
-                // OP_CUDA_PROFILE_INIT(REPS);
+                std::vector<std::shared_ptr<ArrayCpuGpu<float>>> pCaffeNetOutputBlobs;
+                //const auto REPS = 1;
+                //double timeNormalize1 = 0.;
+                //double timeNormalize2 = 0.;
+                //double timeNormalize3 = 0.;
+                //double timeNormalize4 = 0.;
+                //OP_PROFILE_INIT(REPS);
                 // Sanity checks
                 if (inputNetData.empty())
                     error("Empty inputNetData.", __LINE__, __FUNCTION__, __FILE__);
@@ -219,7 +261,7 @@ namespace op
                 if (inputNetData.size() != scaleInputToNetInputs.size())
                     error("Size(inputNetData) must be same than size(scaleInputToNetInputs).",
                           __LINE__, __FUNCTION__, __FILE__);
-                if (poseNetOutput.empty() != mEnableNet)
+                if (poseNetOutput.empty() != (mEnableNet && !mBatchProcessed))
                 {
                     const std::string errorMsg = ". Either use OpenPose default network (`--body 1`) or fill the"
                         " `poseNetOutput` argument (only 1 of those 2, not both).";
@@ -236,7 +278,7 @@ namespace op
                 mNetInput4DSizes.resize(numberScales);
 
                 // Process each image - Caffe deep network
-                if (mEnableNet)
+                if (mEnableNet && !mBatchProcessed)
                 {
                     while (spNets.size() < numberScales)
                         addCaffeNetOnThread(
@@ -245,6 +287,7 @@ namespace op
 
                     for (auto i = 0u ; i < inputNetData.size(); i++)
                         spNets.at(i)->forwardPass(inputNetData[i]);
+                    pCaffeNetOutputBlobs = spCaffeNetOutputBlobs;
                 }
                 // If custom network output
                 else
@@ -255,9 +298,9 @@ namespace op
                               + std::to_string(inputNetData.size()) + " vs. " + std::to_string(1) + ").",
                               __LINE__, __FUNCTION__, __FILE__);
                     // Copy heatmap information
-                    spCaffeNetOutputBlobs.clear();
+                    pCaffeNetOutputBlobs.clear();
                     const bool copyFromGpu = false;
-                    spCaffeNetOutputBlobs.emplace_back(
+                    pCaffeNetOutputBlobs.emplace_back(
                         std::make_shared<ArrayCpuGpu<float>>(poseNetOutput, copyFromGpu));
                 }
                 // Reshape blobs if required
@@ -271,7 +314,7 @@ namespace op
                         mNetInput4DSizes.at(i) = inputNetData[i].getSize();
                         reshapePoseExtractorCaffe(
                             spResizeAndMergeCaffe, spNmsCaffe, spBodyPartConnectorCaffe,
-                            spMaximumCaffe, spCaffeNetOutputBlobs, spHeatMapsBlob,
+                            spMaximumCaffe, pCaffeNetOutputBlobs, spHeatMapsBlob,
                             spPeaksBlob, spMaximumPeaksBlob, 1.f, mPoseModel,
                             mGpuId, mUpsamplingRatio);
                             // In order to resize to input size to have same results as Matlab
@@ -286,11 +329,11 @@ namespace op
                             positiveIntRound(ratio*mNetInput4DSizes[0][3]),
                             positiveIntRound(ratio*mNetInput4DSizes[0][2])};
                 }
-                // OP_CUDA_PROFILE_END(timeNormalize1, 1e3, REPS);
-                // OP_CUDA_PROFILE_INIT(REPS);
+                //OP_PROFILE_END(timeNormalize1, 1e3, REPS);
+                //OP_PROFILE_INIT(REPS);
                 // 2. Resize heat maps + merge different scales
                 // ~5ms (GPU) / ~20ms (CPU)
-                const auto caffeNetOutputBlobs = arraySharedToPtr(spCaffeNetOutputBlobs);
+                const auto caffeNetOutputBlobs = arraySharedToPtr(pCaffeNetOutputBlobs);
                 // Set and fill floatScaleRatios
                     // Option 1/2 (warning for double-to-float conversion)
                 // const std::vector<float> floatScaleRatios(scaleInputToNetInputs.begin(), scaleInputToNetInputs.end());
@@ -311,16 +354,16 @@ namespace op
                 // mScaleNetToOutput = 1.f;
                 // 3. Get peaks by Non-Maximum Suppression
                 // ~2ms (GPU) / ~7ms (CPU)
-                // OP_CUDA_PROFILE_END(timeNormalize2, 1e3, REPS);
+                //OP_PROFILE_END(timeNormalize2, 1e3, REPS);
                 const auto nmsThreshold = (float)get(PoseProperty::NMSThreshold);
                 const auto nmsOffset = float(0.5/double(mScaleNetToOutput));
-                // OP_CUDA_PROFILE_INIT(REPS);
+                //OP_PROFILE_INIT(REPS);
                 spNmsCaffe->setThreshold(nmsThreshold);
                 spNmsCaffe->setOffset(Point<float>{nmsOffset, nmsOffset});
                 spNmsCaffe->Forward({spHeatMapsBlob.get()}, {spPeaksBlob.get()});
                 // 4. Connecting body parts
-                // OP_CUDA_PROFILE_END(timeNormalize3, 1e3, REPS);
-                // OP_CUDA_PROFILE_INIT(REPS);
+                //OP_PROFILE_END(timeNormalize3, 1e3, REPS);
+                //OP_PROFILE_INIT(REPS);
                 spBodyPartConnectorCaffe->setScaleNetToOutput(mScaleNetToOutput);
                 spBodyPartConnectorCaffe->setDefaultNmsThreshold((float)get(PoseProperty::NMSThreshold));
                 spBodyPartConnectorCaffe->setInterMinAboveThreshold(
@@ -331,11 +374,11 @@ namespace op
                 // Note: BODY_25D will crash (only implemented for CPU version)
                 spBodyPartConnectorCaffe->Forward(
                     {spHeatMapsBlob.get(), spPeaksBlob.get()}, mPoseKeypoints, mPoseScores);
-                // OP_CUDA_PROFILE_END(timeNormalize4, 1e3, REPS);
-                // opLog("1(caf)= " + std::to_string(timeNormalize1) + "ms");
-                // opLog("2(res) = " + std::to_string(timeNormalize2) + " ms");
-                // opLog("3(nms) = " + std::to_string(timeNormalize3) + " ms");
-                // opLog("4(bpp) = " + std::to_string(timeNormalize4) + " ms");
+                //OP_PROFILE_END(timeNormalize4, 1e3, REPS);
+                //opLog("1(caf)= " + std::to_string(timeNormalize1) + "ms");
+                //opLog("2(res) = " + std::to_string(timeNormalize2) + " ms");
+                //opLog("3(nms) = " + std::to_string(timeNormalize3) + " ms");
+                //opLog("4(bpp) = " + std::to_string(timeNormalize4) + " ms");
                 // Re-run on each person
                 if (TOP_DOWN_REFINEMENT)
                 {
@@ -431,7 +474,7 @@ namespace op
                             // 1. Caffe deep network
                             spNets.at(0)->forwardPass(inputNetDataRoi);
                             std::vector<std::shared_ptr<ArrayCpuGpu<float>>> caffeNetOutputBlob{
-                                spCaffeNetOutputBlobs[0]};
+                                pCaffeNetOutputBlobs[0]};
                             // Reshape blobs
                             if (!vectorsAreEqual(mNetInput4DSizes.at(0), inputNetDataRoi.getSize()))
                             {

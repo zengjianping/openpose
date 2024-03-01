@@ -35,6 +35,20 @@ namespace op
         }
     }
 
+    void PoseExtractor::forwardData(const std::vector<Array<float>>& inputDatas, std::vector<Array<float>>& outputDatas,
+            const long long frameId)
+    {
+        try
+        {
+            if (mTracking < 1 || frameId % (mTracking+1) == 0)
+                spPoseExtractorNet->forwardData(inputDatas, outputDatas);
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+        }
+    }
+
     void PoseExtractor::forwardPass(const std::vector<Array<float>>& inputNetData,
                                     const Point<int>& inputDataSize,
                                     const std::vector<double>& scaleInputToNetInputs,

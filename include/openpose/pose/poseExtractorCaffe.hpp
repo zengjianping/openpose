@@ -29,6 +29,8 @@ namespace op
 
         virtual void netInitializationOnThread();
 
+        virtual void forwardData(const std::vector<Array<float>>& inputDatas, std::vector<Array<float>>& outputDatas);
+
         /**
          * @param poseNetOutput If it is not empty, OpenPose will not run its internal body pose estimation network
          * and will instead use this data as the substitute of its network. The size of this element must match the
@@ -75,6 +77,7 @@ namespace op
         std::shared_ptr<ArrayCpuGpu<float>> spHeatMapsBlob;
         std::shared_ptr<ArrayCpuGpu<float>> spPeaksBlob;
         std::shared_ptr<ArrayCpuGpu<float>> spMaximumPeaksBlob;
+        bool mBatchProcessed;
 
         DELETE_COPY(PoseExtractorCaffe);
     };

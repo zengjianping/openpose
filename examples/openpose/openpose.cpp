@@ -97,7 +97,7 @@ void configureWrapper(op::Wrapper& opWrapper)
             producerType, producerString, FLAGS_frame_first, FLAGS_frame_step, FLAGS_frame_last,
             FLAGS_process_real_time, FLAGS_frame_flip, FLAGS_frame_rotate, FLAGS_frames_repeat,
             cameraSize, op::String(FLAGS_camera_parameter_path), FLAGS_frame_undistort, FLAGS_3d_views,
-            FLAGS_camera_trigger_mode, FLAGS_capture_fps};
+            FLAGS_camera_trigger_mode, FLAGS_capture_fps, FLAGS_batch_process};
         opWrapper.configure(wrapperStructInput);
         // Output (comment or use default argument to disable any output)
         const op::WrapperStructOutput wrapperStructOutput{

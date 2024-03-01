@@ -264,7 +264,7 @@ namespace op
                     producerSharedPtr, wrapperStructInput.frameFirst, wrapperStructInput.frameStep,
                     wrapperStructInput.frameLast, spVideoSeek
                 );
-                datumProducerW = std::make_shared<WDatumProducer<TDatum>>(datumProducer);
+                datumProducerW = std::make_shared<WDatumProducer<TDatum>>(datumProducer, wrapperStructInput.batchProcessData);
             }
             else
                 datumProducerW = nullptr;
@@ -413,7 +413,7 @@ namespace op
                                 std::make_shared<WCvMatToOpOutput<TDatumsSP>>(cvMatToOpOutputs.back()));
                         }
                         poseExtractorsWs.at(i).emplace_back(
-                            std::make_shared<WPoseExtractor<TDatumsSP>>(poseExtractor));
+                            std::make_shared<WPoseExtractor<TDatumsSP>>(poseExtractor, wrapperStructInput.batchProcessData));
                         // poseExtractorsWs.at(i) = {std::make_shared<WPoseExtractor<TDatumsSP>>(poseExtractor)};
                         // // Just OpenPose keypoint detector
                         // poseExtractorsWs.at(i) = {std::make_shared<WPoseExtractorNet<TDatumsSP>>(
@@ -965,10 +965,6 @@ namespace op
             // Set wrapper as configured
             opLog("", Priority::Low, __LINE__, __FUNCTION__, __FILE__);
 
-
-
-
-
             // The less number of queues -> the less threads opened, and potentially the less lag
 
             // Sanity checks
@@ -1077,15 +1073,19 @@ namespace op
                     threadManager.add(threadId, poseExtractorsWs.at(0), queueIn++, queueOut++);
                 }
             }
-            // Assemble all frames from same time instant (3-D module)
-            const auto wQueueAssembler = std::make_shared<WQueueAssembler<TDatums>>();
+
             // 3-D reconstruction
             if (!poseTriangulationsWs.empty())
             {
-                // Assemble frames
-                opLog("", Priority::Low, __LINE__, __FUNCTION__, __FILE__);
-                threadManager.add(threadId, wQueueAssembler, queueIn++, queueOut++);
-                threadIdPP(threadId, multiThreadEnabled);
+                // Assemble all frames from same time instant (3-D module)
+                if (!wrapperStructInput.batchProcessData)
+                {
+                    opLog("", Priority::Low, __LINE__, __FUNCTION__, __FILE__);
+                    const auto wQueueAssembler = std::make_shared<WQueueAssembler<TDatums>>();
+                    threadManager.add(threadId, wQueueAssembler, queueIn++, queueOut++);
+                    threadIdPP(threadId, multiThreadEnabled);
+                }
+
                 // 3-D reconstruction
                 if (multiThreadEnabled)
                 {
@@ -1116,7 +1116,13 @@ namespace op
                 }
             }
             else
-                postProcessingWs = mergeVectors({wQueueAssembler}, postProcessingWs);
+            {
+                if (!wrapperStructInput.batchProcessData)
+                {
+                    const auto wQueueAssembler = std::make_shared<WQueueAssembler<TDatums>>();
+                    postProcessingWs = mergeVectors({wQueueAssembler}, postProcessingWs);
+                }
+            }
             // Adam/IK step
             if (!jointAngleEstimationsWs.empty())
             {

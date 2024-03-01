@@ -410,6 +410,9 @@ namespace op
                 else
                     CameraSetIspOutFormat(cameraHandle,CAMERA_MEDIA_TYPE_BGR8);
 
+                // Configure trigger
+                configCameraTrigger(cameraHandle, mCameraTriggerMode);
+
                 // Camera exposure
                 bool autoExposure = true;
                 CameraSetAeState(cameraHandle, autoExposure);
@@ -417,9 +420,6 @@ namespace op
                 CameraSetAnalogGain(cameraHandle, 80);
                 CameraSetExposureTime(cameraHandle, 20 * 1000);
                 
-                // Configure trigger
-                configCameraTrigger(cameraHandle, mCameraTriggerMode);
-
                 // Set camera resolution
                 int widthMax = cameraCapbility.sResolutionRange.iWidthMax;
                 int heightMax = cameraCapbility.sResolutionRange.iHeightMax;
