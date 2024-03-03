@@ -8,7 +8,6 @@ set(OpenPose_VERSION ${OpenPose_VERSION_MAJOR}.${OpenPose_VERSION_MINOR}.${OpenP
 ### OS-DEPENDENT FLAGS
 set(CMAKE_MACOSX_RPATH 1)
 
-
 ### CMAKE HEADERS
 # Ubuntu 18 default. After 3.8, no need for find_CUDA
 # https://cmake.org/cmake/help/v3.10/module/FindCUDA.html
@@ -164,7 +163,6 @@ endif (WIN32)
 #     add_definitions("/arch:IA32")
 #   endif (${INSTRUCTION_SET} MATCHES "SSE")
 # endif (WIN32)
-
 
 ### PROJECT OPTIONS
 # Select the DL Framework
@@ -1037,6 +1035,7 @@ if (UNIX OR APPLE)
 
 endif (UNIX OR APPLE)
 
+SET(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/install)
 
 ### INSTALL
 if (UNIX OR APPLE)
