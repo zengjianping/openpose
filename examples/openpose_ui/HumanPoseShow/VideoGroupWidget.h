@@ -18,6 +18,7 @@ public:
     // 视频显示界面布局
     void layoutVideos(int count, int group = -1);
     QWidget* getVideoWidget(int index);
+    void setImage(int index, QPixmap& pixmap);
 
 protected:
     void initializeUI();

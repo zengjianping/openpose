@@ -9,7 +9,7 @@ namespace op
     class OP_API ImageSaver : public FileSaver
     {
     public:
-        ImageSaver(const std::string& directoryPath, const std::string& imageFormat);
+        ImageSaver(const std::string& directoryPath, const std::string& imageFormat, int writeImageMode = 0);
 
         virtual ~ImageSaver();
 
@@ -19,6 +19,7 @@ namespace op
 
     private:
         const std::string mImageFormat;
+        const int mWriteImageMode;
     };
 }
 

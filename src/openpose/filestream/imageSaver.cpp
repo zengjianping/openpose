@@ -3,9 +3,9 @@
 
 namespace op
 {
-    ImageSaver::ImageSaver(const std::string& directoryPath, const std::string& imageFormat) :
+    ImageSaver::ImageSaver(const std::string& directoryPath, const std::string& imageFormat, int writeImageMode) :
         FileSaver{directoryPath},
-        mImageFormat{imageFormat}
+        mImageFormat{imageFormat}, mWriteImageMode{writeImageMode}
     {
         try
         {
@@ -43,7 +43,7 @@ namespace op
             {
                 std::vector<std::string> fileNames(matOutputDatas.size());
 
-                if (matOutputDatas.size() > 0)
+                if (matOutputDatas.size() > 0 && mWriteImageMode > 0)
                 {
                     const auto fileNameNoExtension = getNextFileName(fileName) + "_camera";
                     // Get names for each image

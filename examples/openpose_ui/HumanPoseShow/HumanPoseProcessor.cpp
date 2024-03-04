@@ -1,5 +1,7 @@
 #include "HumanPoseProcessor.h"
+#include "StereoPoseRender.hpp"
 #include "openpose/headers.hpp"
+#include <openpose/utilities/profiler.hpp>
 
 
 class HumanPoseProcessorOP : public HumanPoseProcessor
@@ -9,13 +11,16 @@ public:
     virtual ~HumanPoseProcessorOP();
 
 public:
+    void setCallback(HumanPoseProcessorCallback* callback) override;
     bool start() override;
     void stop() override;
     bool isRunning() override;
 
 private:
     HumanPoseParams params_;
+    HumanPoseProcessorCallback* callback_;
     std::shared_ptr<op::Wrapper> opWrapper_;
+    std::chrono::time_point<std::chrono::high_resolution_clock> opTimer_;
 };
 
 std::shared_ptr<HumanPoseProcessor> HumanPoseProcessor::createInstance(const HumanPoseParams& params)
@@ -29,32 +34,36 @@ std::shared_ptr<HumanPoseProcessor> HumanPoseProcessor::createInstance(const Hum
 HumanPoseProcessorOP::HumanPoseProcessorOP(const HumanPoseParams& params)
 {
     params_ = params;
+    callback_ = nullptr;
 }
 
 HumanPoseProcessorOP::~HumanPoseProcessorOP()
 {
 }
 
-void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params);
+void HumanPoseProcessorOP::setCallback(HumanPoseProcessorCallback* callback)
+{
+    callback_ = callback;
+}
+
+void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, HumanPoseProcessorCallback* callback);
 
 bool HumanPoseProcessorOP::start()
 {
     try
     {
         op::opLog("Starting OpenPose demo...", op::Priority::High);
-        const auto opTimer = op::getTimerInit();
+        opTimer_ = op::getTimerInit();
 
         // Configure OpenPose
         op::opLog("Configuring OpenPose...", op::Priority::High);
-        opWrapper_.reset(new op::Wrapper(op::ThreadManagerMode::AsynchronousOut));
-        configureWrapper(*opWrapper_, params_);
+        opWrapper_.reset(new op::Wrapper());
+        //opWrapper_.reset(new op::Wrapper(op::ThreadManagerMode::AsynchronousOut));
+        configureWrapper(*opWrapper_, params_, callback_);
 
         // Start, run, and stop processing - exec() blocks this thread until OpenPose wrapper has finished
         op::opLog("Starting thread(s)...", op::Priority::High);
         opWrapper_->start();
-
-        // Measuring total time
-        op::printTime(opTimer, "OpenPose demo successfully finished. Total time: ", " seconds.", op::Priority::High);
 
         // Return successful message
         return true;
@@ -70,8 +79,14 @@ void HumanPoseProcessorOP::stop()
 {
     try
     {
-        if (opWrapper_.get() && opWrapper_->isRunning())
-            opWrapper_->stop();
+        if (opWrapper_.get())
+        {
+            if (opWrapper_->isRunning())
+                opWrapper_->stop();
+
+            // Measuring total time
+            op::printTime(opTimer_, "OpenPose demo successfully finished. Total time: ", " seconds.", op::Priority::High);
+        }
         opWrapper_.reset();
     }
     catch(const std::exception& e)
@@ -85,7 +100,166 @@ bool HumanPoseProcessorOP::isRunning()
     return opWrapper_.get() && opWrapper_->isRunning();
 }
 
-void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params)
+
+
+// This worker will just read and return all the jpg files in a directory
+class WUserOutput : public op::WorkerConsumer<std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>>
+{
+public:
+    WUserOutput(HumanPoseProcessorCallback* callback, bool stereoPose, bool displayImage, bool printInfo)
+    {
+        callback_ = callback;
+        stereoPose_ = stereoPose_;
+        if (stereoPose)
+            stereoPoseRender_.reset(new op::StereoPoseRender(true));
+        displayImage_ = displayImage;
+        printInfo_ = printInfo;
+    }
+
+    ~WUserOutput()
+    {
+    }
+
+    void initializationOnThread()
+    {
+        if (stereoPoseRender_.get())
+            stereoPoseRender_->initialize();
+    }
+
+    void workConsumer(const std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>& datumsPtr)
+    {
+        try
+        {
+            // User's displaying/saving/other processing here
+                // datumPtr->cvOutputData: rendered frame with pose or heatmaps
+                // datumPtr->poseKeypoints: Array<float> with the estimated pose
+            if (datumsPtr != nullptr && !datumsPtr->empty())
+            {
+                if (stereoPoseRender_.get())
+                {
+                    // Profiling speed
+                    const auto profilerKey = op::Profiler::timerInit(__LINE__, __FUNCTION__, __FILE__);
+                    // Update keypoints
+                    auto& tDatumPtr = (*datumsPtr)[0];
+                    stereoPoseRender_->setKeypoints(
+                        tDatumPtr->poseKeypoints3D, tDatumPtr->faceKeypoints3D, tDatumPtr->handKeypoints3D[0],
+                        tDatumPtr->handKeypoints3D[1]);
+                    // Refresh/update GUI
+                    stereoPoseRender_->update();
+                    // Read OpenCV mat equivalent
+                    tDatumPtr->cvOutputData3D = stereoPoseRender_->readCvMat();
+                    cv::Mat cvMat = OP_OP2CVMAT(tDatumPtr->cvOutputData3D);
+                    callback_->set3dPoseImage(cvMat);
+                    // Profiling speed
+                    op::Profiler::timerEnd(profilerKey);
+                    op::Profiler::printAveragedTimeMsOnIterationX(profilerKey, __LINE__, __FUNCTION__, __FILE__);
+                }
+
+                for (size_t i = 0; i < datumsPtr->size(); i++)
+                {
+                    // Display results (if enabled)
+                    if (displayImage_ && callback_)
+                    {
+                        // Display rendered output image
+                        const cv::Mat cvMat = OP_OP2CVCONSTMAT(datumsPtr->at(i)->cvOutputData);
+                        if (!cvMat.empty())
+                        {
+                            callback_->set2dPoseImage(i, cvMat);
+                        }
+                        else
+                        {
+                            op::opLog("Empty cv::Mat as output.", op::Priority::High, __LINE__, __FUNCTION__, __FILE__);
+                        }
+
+                    }
+
+                    if (printInfo_)
+                    {
+                        // Show in command line the resulting pose keypoints for body, face and hands
+                        op::opLog("\nKeypoints:");
+                        // Accessing each element of the keypoints
+                        const auto& poseKeypoints = datumsPtr->at(i)->poseKeypoints;
+                        op::opLog("Person pose keypoints:");
+                        for (auto person = 0 ; person < poseKeypoints.getSize(0) ; person++)
+                        {
+                            op::opLog("Person " + std::to_string(person) + " (x, y, score):");
+                            for (auto bodyPart = 0 ; bodyPart < poseKeypoints.getSize(1) ; bodyPart++)
+                            {
+                                std::string valueToPrint;
+                                for (auto xyscore = 0 ; xyscore < poseKeypoints.getSize(2) ; xyscore++)
+                                {
+                                    valueToPrint += std::to_string(   poseKeypoints[{person, bodyPart, xyscore}]   ) + " ";
+                                }
+                                op::opLog(valueToPrint);
+                            }
+                        }
+
+                        op::opLog("\n3D Keypoints:");
+                        // Accessing each element of the keypoints
+                        const auto& poseKeypoints3D = datumsPtr->at(i)->poseKeypoints3D;
+                        op::opLog("Person pose 3d keypoints:");
+                        for (auto person = 0 ; person < poseKeypoints3D.getSize(0) ; person++)
+                        {
+                            op::opLog("Person " + std::to_string(person) + " (x, y, z, score):");
+                            for (auto bodyPart = 0 ; bodyPart < poseKeypoints3D.getSize(1) ; bodyPart++)
+                            {
+                                std::string valueToPrint;
+                                for (auto xyscore = 0 ; xyscore < poseKeypoints3D.getSize(2) ; xyscore++)
+                                {
+                                    valueToPrint += std::to_string(   poseKeypoints3D[{person, bodyPart, xyscore}]   ) + " ";
+                                }
+                                op::opLog(valueToPrint);
+                            }
+                        }
+
+                        op::opLog(" ");
+                        // Alternative: just getting std::string equivalent
+                        op::opLog("Face keypoints: " + datumsPtr->at(i)->faceKeypoints.toString());
+                        op::opLog("Left hand keypoints: " + datumsPtr->at(i)->handKeypoints[0].toString());
+                        op::opLog("Right hand keypoints: " + datumsPtr->at(i)->handKeypoints[1].toString());
+
+                        // Heatmaps
+                        const auto& poseHeatMaps = datumsPtr->at(i)->poseHeatMaps;
+                        if (!poseHeatMaps.empty())
+                        {
+                            op::opLog("Pose heatmaps size: [" + std::to_string(poseHeatMaps.getSize(0)) + ", "
+                                    + std::to_string(poseHeatMaps.getSize(1)) + ", "
+                                    + std::to_string(poseHeatMaps.getSize(2)) + "]");
+                            const auto& faceHeatMaps = datumsPtr->at(i)->faceHeatMaps;
+                            op::opLog("Face heatmaps size: [" + std::to_string(faceHeatMaps.getSize(0)) + ", "
+                                    + std::to_string(faceHeatMaps.getSize(1)) + ", "
+                                    + std::to_string(faceHeatMaps.getSize(2)) + ", "
+                                    + std::to_string(faceHeatMaps.getSize(3)) + "]");
+                            const auto& handHeatMaps = datumsPtr->at(i)->handHeatMaps;
+                            op::opLog("Left hand heatmaps size: [" + std::to_string(handHeatMaps[0].getSize(0)) + ", "
+                                    + std::to_string(handHeatMaps[0].getSize(1)) + ", "
+                                    + std::to_string(handHeatMaps[0].getSize(2)) + ", "
+                                    + std::to_string(handHeatMaps[0].getSize(3)) + "]");
+                            op::opLog("Right hand heatmaps size: [" + std::to_string(handHeatMaps[1].getSize(0)) + ", "
+                                    + std::to_string(handHeatMaps[1].getSize(1)) + ", "
+                                    + std::to_string(handHeatMaps[1].getSize(2)) + ", "
+                                    + std::to_string(handHeatMaps[1].getSize(3)) + "]");
+                        }
+                    }
+                }
+            }
+        }
+        catch (const std::exception& e)
+        {
+            this->stop();
+            op::error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+        }
+    }
+
+private:
+    HumanPoseProcessorCallback* callback_;
+    bool stereoPose_;
+    bool displayImage_;
+    bool printInfo_;
+    std::shared_ptr<op::StereoPoseRender> stereoPoseRender_;
+};
+
+void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, HumanPoseProcessorCallback* callback)
 {
     try
     {
@@ -162,7 +336,7 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params)
         int camera_trigger_mode = 0;
         double capture_fps = -1.;
         bool batch_process = false;
-        double cli_verbose = 1.;
+        double cli_verbose = -1.;
         std::string write_keypoint = "";
         std::string write_keypoint_format = "yml";
         std::string write_json = "";
@@ -181,7 +355,7 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params)
         std::string write_bvh = "";
         std::string udp_host = "";
         std::string udp_port = "8051";
-        int display_mode = -1;
+        int display_mode = 0;
         bool no_gui_verbose = false;
         bool fullscreen = false;
 
@@ -227,7 +401,6 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params)
         batch_process = params.algorithmParams.batchProcess;
         process_real_time = params.algorithmParams.realTimeProcess;
 
-
         // logging_level
         op::ConfigureLog::setPriorityThreshold(logging_level);
         op::Profiler::setDefaultX(profile_speed);
@@ -266,6 +439,13 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params)
         const auto handDetector = op::flagsToDetector(hand_detector);
         // Enabling Google Logging
         const bool enableGoogleLogging = true;
+
+        // Initializing the user custom classes
+        // GUI (Display)
+        auto wUserOutput = std::make_shared<WUserOutput>(callback, enable_3d, true, false);
+        // Add custom processing
+        const auto workerOutputOnNewThread = true;
+        opWrapper.setWorker(op::WorkerType::Output, wUserOutput, workerOutputOnNewThread);
 
         // Pose configuration (use WrapperStructPose{} for default and recommended configuration)
         const op::WrapperStructPose wrapperStructPose{

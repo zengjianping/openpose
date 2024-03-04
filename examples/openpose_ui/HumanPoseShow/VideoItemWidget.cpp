@@ -64,6 +64,11 @@ QPixmap VideoItemWidget::getImage()
     return currImage_;
 }
 
+void VideoItemWidget::setImage(QPixmap& pixmap)
+{
+    currImage_ = pixmap;
+}
+
 void VideoItemWidget::resetImage()
 {
     currImage_ = QPixmap(":/images/video_bg.jpg");

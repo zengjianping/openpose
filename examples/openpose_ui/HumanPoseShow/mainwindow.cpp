@@ -65,26 +65,27 @@ void MainWindow::configMindCamera()
 
 void MainWindow::configHikCamera()
 {
+    // TODO...
 }
 
 void MainWindow::configInput()
 {
-
+    // TODO...
 }
 
 void MainWindow::configOutput()
 {
-
+    // TODO...
 }
 
 void MainWindow::configAlgorithm()
 {
-
+    // TODO...
 }
 
 void MainWindow::calibrateCamera()
 {
-
+    // TODO...
 }
 
 void MainWindow::startExecute()
@@ -92,7 +93,10 @@ void MainWindow::startExecute()
     if (!humanPoseProcessor.get())
         humanPoseProcessor = HumanPoseProcessor::createInstance(humanPoseParams);
     if (!humanPoseProcessor->isRunning())
+    {
+        humanPoseProcessor->setCallback(this);
         humanPoseProcessor->start();
+    }
     if (!humanPoseProcessor->isRunning())
         humanPoseProcessor.reset();
     bool sucDone = humanPoseProcessor.get() != nullptr;
@@ -111,21 +115,39 @@ void MainWindow::stopExecute()
 
 void MainWindow::exeOptionSaveOutput(bool checked)
 {
+    // TODO...
 }
 
 void MainWindow::exeOptionAlgorithmNo()
 {
-
+    humanPoseParams.algorithmParams.algoType = HumanPoseParams::AlgorithmParams::AlgoTypeNo;
 }
 
 void MainWindow::exeOptionAlgorithm2d()
 {
-
+    humanPoseParams.algorithmParams.algoType = HumanPoseParams::AlgorithmParams::AlgoType2D;
 }
 
 void MainWindow::exeOptionAlgorithm3d()
 {
+    humanPoseParams.algorithmParams.algoType = HumanPoseParams::AlgorithmParams::AlgoType3D;
+}
 
+void MainWindow::set2dPoseImage(int index, const cv::Mat& image)
+{
+    //printf("2D pose image: %d\n", index);
+    QImage qimage((uchar*)image.data, image.cols, image.rows, image.step, QImage::Format_RGB888);
+    QPixmap pixmap = QPixmap::fromImage(qimage.rgbSwapped());// 将 OpenCV 的 BGR 格式转换为 QImage 的 RGB 格式
+    widgetVideoGroup->setImage(index, pixmap);
+}
+
+void MainWindow::set3dPoseImage(const cv::Mat& image)
+{
+    //printf("3D pose image\n");
+    QImage qimage((uchar*)image.data, image.cols, image.rows, image.step, QImage::Format_RGB888);
+    QPixmap pixmap = QPixmap::fromImage(qimage.rgbSwapped());// 将 OpenCV 的 BGR 格式转换为 QImage 的 RGB 格式
+    widget3dPoseView->setImage(pixmap);
+    widget3dPoseView->update();
 }
 
 void MainWindow::createActions()

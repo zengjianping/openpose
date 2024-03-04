@@ -20,6 +20,7 @@ public:
     void setSelected(bool selected);
 
     QPixmap getImage();
+    void setImage(QPixmap& pixmap);
     void resetImage();
 
 protected:

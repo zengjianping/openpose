@@ -802,7 +802,7 @@ namespace op
             {
                 opLog("", Priority::Low, __LINE__, __FUNCTION__, __FILE__);
                 const auto imageSaver = std::make_shared<ImageSaver>(
-                    writeImagesCleaned, wrapperStructOutput.writeImagesFormat.getStdString());
+                    writeImagesCleaned, wrapperStructOutput.writeImagesFormat.getStdString(), wrapperStructOutput.writeImageMode);
                 outputWs.emplace_back(std::make_shared<WImageSaver<TDatumsSP>>(imageSaver));
             }
             opLog("", Priority::Low, __LINE__, __FUNCTION__, __FILE__);

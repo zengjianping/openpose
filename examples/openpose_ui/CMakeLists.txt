@@ -25,6 +25,8 @@ add_executable(${EXE_NAME}
   HumanPoseShow/VideoGroupWidget.cpp
   HumanPoseShow/HumanPoseProcessor.h
   HumanPoseShow/HumanPoseProcessor.cpp
+  HumanPoseShow/StereoPoseRender.hpp
+  HumanPoseShow/StereoPoseRender.cpp
   HumanPoseShow/MindCameraConfig.h
   HumanPoseShow/MindCameraConfig.cpp
   HumanPoseShow/MindCameraConfig.ui

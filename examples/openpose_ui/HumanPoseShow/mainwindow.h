@@ -17,13 +17,17 @@ class QTextEdit;
 class QListWidget;
 QT_END_NAMESPACE
 
-class MainWindow : public QMainWindow
+class MainWindow : public QMainWindow, public HumanPoseProcessorCallback
 {
     Q_OBJECT
 
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+public:
+    void set2dPoseImage(int index, const cv::Mat& image) override;
+    void set3dPoseImage(const cv::Mat& image) override;
 
 private slots:
     void newTask();

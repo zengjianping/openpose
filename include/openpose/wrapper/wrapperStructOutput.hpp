@@ -142,6 +142,8 @@ namespace op
          */
         String udpPort;
 
+        int writeImageMode;
+
         /**
          * Constructor of the struct.
          * It has the recommended and default values we recommend for each element of the struct.
@@ -157,7 +159,7 @@ namespace op
             const String& writeHeatMaps = "", const String& writeHeatMapsFormat = "png",
             const String& writeVideo3D = "", const String& writeVideoAdam = "",
             const String& writeBvh = "", const String& udpHost = "",
-            const String& udpPort = "8051");
+            const String& udpPort = "8051", const int writeImageMode = 0);
     };
 }
 

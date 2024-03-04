@@ -97,6 +97,13 @@ void VideoGroupWidget::terminateUI()
     DELETE_OBJECT(videoLayout)
 }
 
+void VideoGroupWidget::setImage(int index, QPixmap& pixmap)
+{
+    VideoItemWidget *videoItem = qobject_cast<VideoItemWidget*>(videoItemVec[index]);
+    videoItem->setImage(pixmap);
+    videoItem->update();
+}
+
 int VideoGroupWidget::getVideoIndex(int index)
 {
     for (int i=0; i < videoItemVec.size(); i++)

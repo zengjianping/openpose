@@ -242,6 +242,7 @@ DEFINE_double(cli_verbose,              -1.f,           "If -1, it will be disab
 DEFINE_string(write_images,             "",             "Directory to write rendered frames in `write_images_format` image format.");
 DEFINE_string(write_images_format,      "png",          "File extension and format for `write_images`, e.g., png, jpg or bmp. Check the OpenCV"
                                                         " function cv::imwrite for all compatible extensions.");
+DEFINE_int32(write_image_mode,          0,              "");
 DEFINE_string(write_video,              "",             "Full file path to write rendered frames in motion JPEG video format. It might fail if the"
                                                         " final path does not finish in `.avi`. It internally uses cv::VideoWriter. Flag"
                                                         " `write_video_fps` controls FPS. Alternatively, the video extension can be `.mp4`,"

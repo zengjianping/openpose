@@ -1,6 +1,7 @@
 #ifndef HUMAN_POSE_PROCESSOR_H_
 #define HUMAN_POSE_PROCESSOR_H_
 
+#include <opencv2/opencv.hpp>
 #include <memory>
 
 
@@ -17,15 +18,16 @@ struct HumanPoseParams
             HikCamera,
             InputTypeNum
         };
-        InputType inputType = MindCamera;
+        InputType inputType = VideoFile;
         std::string videoPath = "datas/pose_tests/panoptic/dance2a/video.mp4";
-        int viewNumber = -1;
+        int viewNumber = 4;
         int cameraIndex = -1;
         int cameraTriggerMode = 0;
         double captureFps = -1.;
-        std::string cameraResolution = "1224x1024";
-        std::string cameraParamPath = "datas/pose_tests/mind_camera/test04/cameras/";
-        //std::string cameraParamPath = "datas/pose_tests/panoptic/dance2a/cameras/";
+        //std::string cameraResolution = "1224x1024";
+        //std::string cameraParamPath = "datas/pose_tests/mind_camera/test04/cameras/";
+        std::string cameraResolution = "-1x-1";
+        std::string cameraParamPath = "datas/pose_tests/panoptic/dance2a/cameras/";
         bool frameUndistort = false;
     };
 
@@ -41,7 +43,7 @@ struct HumanPoseParams
             AlgoType2D,
             AlgoType3D
         };
-        AlgoType algoType = AlgoType3D;
+        AlgoType algoType = AlgoTypeNo;
         int minViews3d = -1;
         std::string modelResolution = "-1x192";
         std::string outputResolution = "-1x-1";
@@ -54,12 +56,20 @@ struct HumanPoseParams
     AlgorithmParams algorithmParams;
 };
 
+class HumanPoseProcessorCallback
+{
+public:
+    virtual void set2dPoseImage(int index, const cv::Mat& image) = 0;
+    virtual void set3dPoseImage(const cv::Mat& image) = 0;
+};
+
 class HumanPoseProcessor
 {
 public:
     static std::shared_ptr<HumanPoseProcessor> createInstance(const HumanPoseParams& params);
 
 public:
+    virtual void setCallback(HumanPoseProcessorCallback* callback) = 0;
     virtual bool start() = 0;
     virtual void stop() = 0;
     virtual bool isRunning() = 0;
