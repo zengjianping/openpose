@@ -6,6 +6,8 @@
 
 #include "VideoGroupWidget.h"
 #include "VideoItemWidget.h"
+#include "LayoutVideoWidget.h"
+#include "LayoutPageWidget.h"
 
 #include "HumanPoseProcessor.h"
 
@@ -45,21 +47,31 @@ private slots:
     void exeOptionAlgorithmNo();
     void exeOptionAlgorithm2d();
     void exeOptionAlgorithm3d();
+    void showLayoutVideoWidget();
+    void showLayoutPageWidget();
+    void layoutVideoGroup(int count);
 
 private:
     void createActions();
     void createStatusBar();
     void createDockWindows();
+    void layoutPageChange();
 
 private:
+    LayoutVideoWidget *widgetVideoLayout;    //视频布局
+    LayoutPageWidget *widgetVideoPage;       //视频分页
     VideoGroupWidget *widgetVideoGroup;
     VideoItemWidget *widget3dPoseView;
     QListWidget *paragraphsList;
 
-    QMenu *viewMenu;
     QActionGroup* exeOptionAlgoGroup;
     QAction *startExecuteAct;
     QAction *stopExecuteAct;
+
+    QMenu *viewMenu;
+    QToolBar* viewToolBar;
+    QAction* layoutVideoAct;
+    QAction* layoutPageAct;
 
     HumanPoseParams humanPoseParams;
     std::shared_ptr<HumanPoseProcessor> humanPoseProcessor;

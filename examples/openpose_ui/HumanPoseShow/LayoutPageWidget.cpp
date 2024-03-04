@@ -50,7 +50,7 @@ void LayoutPageWidget::setPageCount(int currIndex, int totalCount)
     labelTotalCount->setText(QStringLiteral("共%1页").arg(totalCount));
 
     if (slotObject)
-        connect(combCurrPage, SIGNAL(currentIndexChanged(int)), slotObject, SLOT(SlotLayoutVideo(int)));
+        connect(combCurrPage, SIGNAL(currentIndexChanged(int)), slotObject, SLOT(layoutVideoGroup(int)));
 }
 
 void LayoutPageWidget::slotFirstPage()

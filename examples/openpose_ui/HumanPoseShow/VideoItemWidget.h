@@ -10,6 +10,10 @@ public:
     explicit VideoItemWidget(QWidget *parent = nullptr);
 
 signals:
+    // 通知视频管理类，视频被选择
+    void signalClicked(int index);
+    // 视频双击
+    void signalDoubleClicked();
 
 public:
     int getIndex();
@@ -24,7 +28,9 @@ public:
     void resetImage();
 
 protected:
-    virtual void paintEvent(QPaintEvent * event);
+    virtual void paintEvent(QPaintEvent* event);
+    virtual void mousePressEvent(QMouseEvent* event);
+    virtual void mouseDoubleClickEvent(QMouseEvent* event);
 
 private:
     QPixmap currImage_;

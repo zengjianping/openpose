@@ -1,5 +1,6 @@
 #include "VideoItemWidget.h"
 #include <QPainter>
+#include <QStyleOption>
 
 
 enum
@@ -48,6 +49,21 @@ void VideoItemWidget::paintEvent(QPaintEvent * event)
         }
     }
     painter.drawPixmap(rc, currImage_);
+
+    //设置样式必需
+    QStyleOption option;
+    option.init(this);
+    style()->drawPrimitive(QStyle::PE_Widget, &option, &painter, this);
+}
+
+void VideoItemWidget::mousePressEvent(QMouseEvent* event)
+{
+    emit signalClicked(index_);
+}
+
+void VideoItemWidget::mouseDoubleClickEvent(QMouseEvent* event)
+{
+    emit signalDoubleClicked();
 }
 
 int VideoItemWidget::getIndex()

@@ -1,6 +1,7 @@
-#include <QtWidgets>
 #include "mainwindow.h"
 #include "MindCameraConfig.h"
+#include "CommonUtils.h"
+#include <QtWidgets>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -21,6 +22,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    DELETE_OBJECT(widgetVideoLayout);
+    DELETE_OBJECT(widgetVideoPage);
 }
 
 void MainWindow::newTask()
@@ -160,6 +163,54 @@ void MainWindow::set3dPoseImage(const cv::Mat& image)
     widget3dPoseView->setImage(pixmap);
 }
 
+void MainWindow::showLayoutVideoWidget()
+{
+    QPoint point = viewToolBar->pos();
+    //point.setX(point.x());
+    point.setY(point.y() + viewToolBar->height());
+    widgetVideoLayout->move(mapToGlobal(point));
+    widgetVideoLayout->show();
+}
+
+void MainWindow::showLayoutPageWidget()
+{
+    QPoint point = viewToolBar->pos();
+    //point.setX(point.x());
+    point.setY(point.y() + viewToolBar->height());
+    widgetVideoPage->move(mapToGlobal(point));
+    layoutPageChange();
+    widgetVideoPage->show();
+}
+
+void MainWindow::layoutVideoGroup(int count)
+{
+    // 获取信号来源,重新分割或者是分页
+    QObject *obj = sender();
+    if (widgetVideoLayout == obj)
+        widgetVideoGroup->layoutVideos(count);
+    else
+        widgetVideoGroup->layoutVideos(-1, count);
+}
+
+void MainWindow::layoutPageChange()
+{
+    int layouVideoCount = INVALID_VALUE;
+    int layouVideoIndex = INVALID_VALUE;
+    int totalVideoCount = INVALID_VALUE;
+
+    // 获取当前选中项与当前视频框个数
+    widgetVideoGroup->getLayoutInfo(layouVideoCount, layouVideoIndex, totalVideoCount);
+    if (INVALID_VALUE == layouVideoCount || INVALID_VALUE == layouVideoIndex)
+        return;
+
+    int totalPages = totalVideoCount / layouVideoCount;
+    if ( totalVideoCount % layouVideoCount != 0 )
+        totalPages++;
+
+    // 设置当前总共分页和当前是第几分页
+    widgetVideoPage->setPageCount(layouVideoIndex/layouVideoCount, totalPages);
+}
+
 void MainWindow::createActions()
 {
     QMenu *fileMenu = menuBar()->addMenu(tr("文件"));
@@ -266,6 +317,15 @@ void MainWindow::createActions()
     optionAlgorithmNo->setChecked(true);
 
     viewMenu = menuBar()->addMenu(tr("视图"));
+    viewToolBar = addToolBar(tr("视图"));
+
+    layoutVideoAct = new QAction(QIcon(":/images/VideoAreaCutEntrance.png"), tr("分隔"), this);
+    connect(layoutVideoAct, &QAction::triggered, this, &MainWindow::showLayoutVideoWidget);
+    viewToolBar->addAction(layoutVideoAct);
+
+    layoutPageAct = new QAction(QIcon(":/images/VideoAreaCutEntrance.png"), tr("分屏"), this);
+    connect(layoutPageAct, &QAction::triggered, this, &MainWindow::showLayoutPageWidget);
+    viewToolBar->addAction(layoutPageAct);
 
     menuBar()->addSeparator();
     QMenu *helpMenu = menuBar()->addMenu(tr("帮助"));
@@ -275,6 +335,14 @@ void MainWindow::createActions()
 
     QAction *aboutQtAct = helpMenu->addAction(tr("关于Qt..."), qApp, &QApplication::aboutQt);
     aboutQtAct->setStatusTip(tr("显示Qt库信息"));
+
+    widgetVideoLayout = new LayoutVideoWidget(this);
+    connect(widgetVideoLayout, SIGNAL(signalVideoCount(int)), this, SLOT(layoutVideoGroup(int)));
+    widgetVideoLayout->hide();
+
+    widgetVideoPage = new LayoutPageWidget(this);
+    widgetVideoPage->setSlotObject(this);
+    widgetVideoPage->hide();
 }
 
 void MainWindow::createStatusBar()

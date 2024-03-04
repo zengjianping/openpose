@@ -41,15 +41,19 @@ void VideoGroupWidget::initializeUI()
         viewItem->setIndex(i);
         videoItemVec.push_back(viewItem);
 
+        connect(viewItem, SIGNAL(signalClicked(int)), this, SLOT(videoItemClicked(int)));
+        connect(viewItem, SIGNAL(signalDoubleClicked()), this, SLOT(videoItemDoubleClicked()));
+
         if (i == 0)
         {
             viewItem->show();
-            viewItem->setSelected(1);
-            viewItem->setStyleSheet("QWidget{border: 3px solid #00a8ff;}");
+            viewItem->setSelected(true);
+            viewItem->setStyleSheet("QWidget{border: 3px solid #ff0000;}");
         }
         else
         {
             viewItem->hide();
+            viewItem->setSelected(false);
             viewItem->setStyleSheet("QWidget{border: 2px solid #adadad;}");
         }
     }
@@ -68,7 +72,7 @@ void VideoGroupWidget::initializeUI()
     videoLayout->setSpacing(5);
     setLayout(videoLayout);
 
-    currVideoCount = 0;
+    currVideoCount = 1;
     currVideoIndex = 0;
 
     layoutVideos(4);
@@ -130,6 +134,13 @@ QWidget* VideoGroupWidget::getVideoWidget(int index)
             return videoItem;
     }
     return nullptr;
+}
+
+void VideoGroupWidget::getLayoutInfo(int& layoutCount, int& layoutIndex, int& totalCount)
+{
+    layoutCount = currVideoCount;
+    layoutIndex = currVideoIndex;
+    totalCount = MAX_VIDEO_COUNT;
 }
 
 void VideoGroupWidget::layoutVideos(int count, int group)
@@ -455,6 +466,61 @@ void VideoGroupWidget::layoutCount64(int group)
             videoItemVec[i]->show();
             videoLayout->addWidget(videoItemVec[i],(i-group*VIDEO_LAYOUT_64)/8,(i-group*VIDEO_LAYOUT_64)%8);
         }
+    }
+}
+
+void VideoGroupWidget::videoItemClicked(int index)
+{
+    if (index == INVALID_VALUE)
+    {
+        // 视频被点击时，设置为选中状态，并设置边框为红色，没有选择的设置为蓝色，从发送的信号源来判断
+        VideoItemWidget *videoSender = qobject_cast<VideoItemWidget*>(sender());
+        for (int i = 0; i < videoItemVec.size(); i++)
+        {
+            VideoItemWidget *videoItem = qobject_cast<VideoItemWidget*>(videoItemVec[i]);
+            if (videoSender == videoItem)
+            {
+                videoItem->setStyleSheet("QWidget{border: 3px solid #ff0000;}"); //选中
+                videoItem->setSelected(true);
+                index = videoItem->getIndex();
+            }
+            else
+            {
+                videoItem->setStyleSheet("QWidget{border: 2px solid #adadad;}");
+                videoItem->setSelected(false);
+            }
+        }
+    }
+    else
+    {
+        // 将索引号对应的视频设置为选中状态，并设置边框为红色，没有选择的设置为蓝色
+        for (int i = 0; i < videoItemVec.size(); i++)
+        {
+            VideoItemWidget *videoItem = qobject_cast<VideoItemWidget*>(videoItemVec[i]);
+            if ( index == videoItem->getIndex() )
+            {
+                videoItem->setStyleSheet("QWidget{border: 3px solid #ff0000;}");
+                videoItem->setSelected(true);
+                index = videoItem->getIndex();
+            }
+            else
+            {
+                videoItem->setStyleSheet("QWidget{border: 2px solid #adadad;}");
+                videoItem->setSelected(0);
+            }
+        }
+
+    }
+    currVideoIndex = index;
+}
+
+void VideoGroupWidget::videoItemDoubleClicked()
+{
+    VideoItemWidget *videoItem = qobject_cast<VideoItemWidget*>(sender());
+    if (videoItem)
+    {
+        int index = videoItem->getIndex();
+        layoutVideos(1, index);
     }
 }
 

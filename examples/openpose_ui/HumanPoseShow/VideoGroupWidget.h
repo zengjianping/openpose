@@ -14,9 +14,14 @@ public:
 
 signals:
 
+public slots:
+    void videoItemClicked(int index);
+    void videoItemDoubleClicked();
+
 public:
     // 视频显示界面布局
     void layoutVideos(int count, int group = -1);
+    void getLayoutInfo(int& layoutCount, int& layoutIndex, int& totalCount);
     QWidget* getVideoWidget(int index);
     void setImage(int index, QPixmap& pixmap);
     void resetAllImage();
