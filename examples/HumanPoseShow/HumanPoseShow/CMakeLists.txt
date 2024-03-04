@@ -16,8 +16,17 @@ find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(OpenPose REQUIRED)
 
+find_package(PkgConfig REQUIRED)
+find_package(jsoncpp REQUIRED)
+pkg_check_modules(JSONCPP jsoncpp)
+
 include_directories(
     ${OpenPose_INCLUDE_DIRS}
+    ${JSONCPP_INCLUDE_DIRS}
+)
+
+link_directories(
+    ${JSONCPP_LIBRARY_DIRS}
 )
 
 set(TS_FILES HumanPoseShow_zh_CN.ts)
@@ -77,7 +86,8 @@ else()
 endif()
 
 target_link_directories(HumanPoseShow PRIVATE "../../../install/lib/")
-target_link_libraries(HumanPoseShow PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${OpenPose_LIBS} caffe Eigen3::Eigen MVSDK)
+target_link_libraries(HumanPoseShow PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
+    ${OpenPose_LIBS} caffe Eigen3::Eigen MVSDK ${JSONCPP_LIBRARIES})
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
