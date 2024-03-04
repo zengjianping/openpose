@@ -19,6 +19,7 @@ VideoItemWidget::VideoItemWidget(QWidget *parent)
     useBgImage = true;
     index_ = -1;
     status_ = ST_INIT;
+    connect(this, &VideoItemWidget::signalUpdate, this, &VideoItemWidget::slotUpdate);
 }
 
 void VideoItemWidget::paintEvent(QPaintEvent * event)
@@ -108,12 +109,18 @@ void VideoItemWidget::setImage(QPixmap& pixmap)
 {
     currImage_ = pixmap;
     useBgImage = false;
-    update();
+    emit signalUpdate();
 }
 
 void VideoItemWidget::resetImage()
 {
     currImage_ = QPixmap(":/images/video_bg.jpg");
     useBgImage = true;
+    emit signalUpdate();
+}
+
+void VideoItemWidget::slotUpdate()
+{
     update();
 }
+

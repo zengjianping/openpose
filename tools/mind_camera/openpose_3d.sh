@@ -5,7 +5,7 @@ data_dir="datas/pose_tests/mind_camera/test04"
 ./build/examples/openpose/openpose.bin \
     --mind_camera --mind_camera_index -1 --camera_trigger_mode 1 \
     --body 1 --num_gpu 1 --camera_resolution "1224x1024" --capture_fps -1 \
-    --camera_parameter_path ${data_dir}/cameras/ \
+    --camera_parameter_path ${data_dir}/cameras/ --net_resolution "-1x256" \
     --3d --3d_views 4 --3d_min_views 2 --number_people_max 1 \
     --frame_undistort --output_resolution "612x512"
 

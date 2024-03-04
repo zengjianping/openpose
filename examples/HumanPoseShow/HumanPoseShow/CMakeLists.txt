@@ -16,10 +16,6 @@ find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(OpenPose REQUIRED)
 
-message("OpenPose:"
-    ${OpenPose_LIBRARY_DIR}
-)
-
 include_directories(
     ${OpenPose_INCLUDE_DIRS}
 )

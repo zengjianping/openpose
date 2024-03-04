@@ -10,10 +10,14 @@ public:
     explicit VideoItemWidget(QWidget *parent = nullptr);
 
 signals:
+    void signalUpdate();
     // 通知视频管理类，视频被选择
     void signalClicked(int index);
     // 视频双击
     void signalDoubleClicked();
+
+public:
+    void slotUpdate();
 
 public:
     int getIndex();

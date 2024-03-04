@@ -16,7 +16,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     setWindowTitle(tr("3D人体姿态识别"));
 
-    newTask();
     setUnifiedTitleAndToolBarOnMac(true);
 }
 
@@ -28,30 +27,69 @@ MainWindow::~MainWindow()
 
 void MainWindow::newTask()
 {
+    QGuiApplication::setOverrideCursor(Qt::WaitCursor);
+    if (!paramFile.isEmpty())
+        humanPoseParams.saveToFile(paramFile.toStdString());
+    paramFile.clear();
+    humanPoseParams = HumanPoseParams();
+    QGuiApplication::restoreOverrideCursor();
+
+    QMessageBox msgBox;
+    msgBox.setText("新建任务成功！");
+    msgBox.exec();
+}
+
+void MainWindow::openTask()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, tr("选择文件"), ".", "Json Files (*.json)");
+    if (fileName.isEmpty())
+        return;
+    QString newParamFile = fileName;
+
+    QGuiApplication::setOverrideCursor(Qt::WaitCursor);
+    //if (!paramFile.isEmpty())
+    //    humanPoseParams.saveToFile(paramFile.toStdString());
+    bool res = humanPoseParams.loadFromFile(newParamFile.toStdString());
+    QGuiApplication::restoreOverrideCursor();
+
+    QMessageBox msgBox;
+    if (res)
+    {
+        paramFile = newParamFile;
+        msgBox.setText(tr("打开任务成功 '%1'").arg(newParamFile));
+    }
+    else
+    {
+        msgBox.setText(tr("打开任务失败 '%1'").arg(newParamFile));
+    }
+    msgBox.exec();
 }
 
 void MainWindow::saveTask()
 {
-    QMimeDatabase mimeDatabase;
-    QString fileName = QFileDialog::getSaveFileName(this,
-                                                    tr("Choose a file name"), ".",
-                                                    mimeDatabase.mimeTypeForName("text/html").filterString());
-    if (fileName.isEmpty())
-        return;
-    QFile file(fileName);
-    if (!file.open(QFile::WriteOnly | QFile::Text)) {
-        QMessageBox::warning(this, tr("Dock Widgets"),
-                             tr("Cannot write file %1:\n%2.")
-                                 .arg(QDir::toNativeSeparators(fileName), file.errorString()));
-        return;
+    if (paramFile.isEmpty())
+    {
+        QString fileName = QFileDialog::getSaveFileName(this, tr("选择文件"), ".", "Json Files (*.json)");
+        if (fileName.isEmpty())
+            return;
+        paramFile = fileName;
     }
 
-    QTextStream out(&file);
     QGuiApplication::setOverrideCursor(Qt::WaitCursor);
-    //out << textEdit->toHtml();
+    bool res = humanPoseParams.saveToFile(paramFile.toStdString());
     QGuiApplication::restoreOverrideCursor();
 
-    statusBar()->showMessage(tr("Saved '%1'").arg(fileName), 2000);
+    QMessageBox msgBox;
+    if (res)
+    {
+        msgBox.setText(tr("保存任务成功 '%1'").arg(paramFile));
+    }
+    else
+    {
+        paramFile.clear();
+        msgBox.setText(tr("保存任务失败 '%1'").arg(paramFile));
+    }
+    msgBox.exec();
 }
 
 void MainWindow::about()
@@ -224,6 +262,14 @@ void MainWindow::createActions()
     fileMenu->addAction(newTaskAct);
     fileToolBar->addAction(newTaskAct);
 
+    const QIcon openIcon = QIcon::fromTheme("document-open", QIcon(":/images/open.png"));
+    QAction *openTaskAct = new QAction(openIcon, tr("打开任务"), this);
+    openTaskAct->setShortcuts(QKeySequence::New);
+    openTaskAct->setStatusTip(tr("打开识别任务"));
+    connect(openTaskAct, &QAction::triggered, this, &MainWindow::openTask);
+    fileMenu->addAction(openTaskAct);
+    fileToolBar->addAction(openTaskAct);
+
     const QIcon saveIcon = QIcon::fromTheme("document-save", QIcon(":/images/save.png"));
     QAction *saveTaskAct = new QAction(saveIcon, tr("保存任务..."), this);
     saveTaskAct->setShortcuts(QKeySequence::Save);
@@ -352,33 +398,17 @@ void MainWindow::createStatusBar()
 
 void MainWindow::createDockWindows()
 {
-    QDockWidget *dock = new QDockWidget(tr("立体姿态视图"), this);
+    QDockWidget *dock = new QDockWidget(tr("3D姿态视图"), this);
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     widget3dPoseView = new VideoItemWidget(dock);
     dock->setWidget(widget3dPoseView);
     addDockWidget(Qt::RightDockWidgetArea, dock);
     viewMenu->addAction(dock->toggleViewAction());
 
-    dock = new QDockWidget(tr("Paragraphs"), this);
+    dock = new QDockWidget(tr("3D姿态数据"), this);
     paragraphsList = new QListWidget(dock);
     paragraphsList->addItems(QStringList()
-                             << "Thank you for your payment which we have received today."
-                             << "Your order has been dispatched and should be with you "
-                                "within 28 days."
-                             << "We have dispatched those items that were in stock. The "
-                                "rest of your order will be dispatched once all the "
-                                "remaining items have arrived at our warehouse. No "
-                                "additional shipping charges will be made."
-                             << "You made a small overpayment (less than $5) which we "
-                                "will keep on account for you, or return at your request."
-                             << "You made a small underpayment (less than $1), but we have "
-                                "sent your order anyway. We'll add this underpayment to "
-                                "your next bill."
-                             << "Unfortunately you did not send enough money. Please remit "
-                                "an additional $. Your order will be dispatched as soon as "
-                                "the complete amount has been received."
-                             << "You made an overpayment (more than $5). Do you wish to "
-                                "buy more items, or should we return the excess to you?");
+                             << "TODO");
     dock->setWidget(paragraphsList);
     addDockWidget(Qt::RightDockWidgetArea, dock);
     viewMenu->addAction(dock->toggleViewAction());

@@ -2,6 +2,7 @@
 #include "StereoPoseRender.hpp"
 #include "openpose/headers.hpp"
 #include <openpose/utilities/profiler.hpp>
+#include <json/json.h>
 
 
 class HumanPoseProcessorOP : public HumanPoseProcessor
@@ -109,7 +110,7 @@ public:
     WUserOutput(HumanPoseProcessorCallback* callback, bool stereoPose, bool displayImage, bool printInfo)
     {
         callback_ = callback;
-        stereoPose_ = stereoPose_;
+        stereoPose_ = stereoPose;
         if (stereoPose)
             stereoPoseRender_.reset(new op::StereoPoseRender(true));
         displayImage_ = displayImage;
@@ -509,5 +510,85 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
     {
         op::error(e.what(), __LINE__, __FUNCTION__, __FILE__);
     }
+}
+
+bool HumanPoseParams::loadFromFile(const std::string& paramFile)
+{
+    Json::Value root;
+    std::ifstream ifs;
+    ifs.open(paramFile);
+
+    Json::CharReaderBuilder builder;
+    builder["collectComments"] = true;
+    JSONCPP_STRING errs;
+    if (!Json::parseFromStream(builder, ifs, &root, &errs)) {
+        std::cout << errs << std::endl;
+        return false;
+    }
+
+    // input parameters
+    Json::Value& inputValue = root["inputParams"];
+    inputParams.inputType = (InputParams::InputType)inputValue["inputType"].asInt();
+    inputParams.videoPath = inputValue["videoPath"].asString();
+    inputParams.viewNumber = inputValue["viewNumber"].asInt();
+    inputParams.cameraIndex = inputValue["cameraIndex"].asInt();
+    inputParams.cameraTriggerMode = inputValue["cameraTriggerMode"].asInt();
+    inputParams.captureFps = inputValue["captureFps"].asFloat();
+    inputParams.cameraResolution = inputValue["cameraResolution"].asString();
+    inputParams.cameraParamPath = inputValue["cameraParamPath"].asString();
+    inputParams.frameUndistort = inputValue["frameUndistort"].asBool();
+
+    Json::Value& algorithmValue = root["algorithmParams"];
+    algorithmParams.minViews3d = algorithmValue["minViews3d"].asInt();
+    algorithmParams.modelResolution = algorithmValue["modelResolution"].asString();
+    algorithmParams.outputResolution = algorithmValue["outputResolution"].asString();
+    algorithmParams.batchProcess = algorithmValue["batchProcess"].asBool();
+    algorithmParams.realTimeProcess = algorithmValue["realTimeProcess"].asBool();
+
+    return true;
+}
+
+bool HumanPoseParams::saveToFile(const std::string& paramFile)
+{
+    Json::Value root, inputValue, algorithmValue;
+
+    inputValue["inputType"] = Json::Value(int(inputParams.inputType));
+    inputValue["videoPath"] = Json::Value(inputParams.videoPath);
+    inputValue["viewNumber"] = Json::Value(inputParams.viewNumber);
+    inputValue["cameraIndex"] = Json::Value(inputParams.cameraIndex);
+    inputValue["cameraTriggerMode"] = Json::Value(inputParams.cameraTriggerMode);
+    inputValue["captureFps"] = Json::Value(inputParams.captureFps);
+    inputValue["cameraResolution"] = Json::Value(inputParams.cameraResolution);
+    inputValue["cameraParamPath"] = Json::Value(inputParams.cameraParamPath);
+    inputValue["frameUndistort"] = Json::Value(inputParams.frameUndistort);
+
+    algorithmValue["minViews3d"] = Json::Value(algorithmParams.minViews3d);
+    algorithmValue["modelResolution"] = Json::Value(algorithmParams.modelResolution);
+    algorithmValue["outputResolution"] = Json::Value(algorithmParams.outputResolution);
+    algorithmValue["batchProcess"] = Json::Value(algorithmParams.batchProcess);
+    algorithmValue["realTimeProcess"] = Json::Value(algorithmParams.realTimeProcess);
+
+    root["inputParams"] = inputValue;
+    root["algorithmParams"] = algorithmValue;
+
+	Json::StreamWriterBuilder builder;
+	static Json::Value def = []() {
+		Json::Value def;
+		Json::StreamWriterBuilder::setDefaults(&def);
+		def["emitUTF8"] = true;
+		return def;
+	}();
+ 
+	builder.settings_ = def; //Config emitUTF8
+	const std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
+ 
+    std::ofstream ofs;
+    ofs.open(paramFile);
+    if (!ofs.is_open())
+        return false;
+	writer->write(root, &ofs);
+    ofs.close();
+
+    return true;
 }
 

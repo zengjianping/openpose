@@ -10,7 +10,19 @@ endif()
 set(Qt5_DIR "/home/zengjianping/Qt/5.15.1/gcc_64/lib/cmake/Qt5/")
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
-set(EXE_NAME "OpenPoseUI")
+find_package(PkgConfig REQUIRED)
+find_package(jsoncpp REQUIRED)
+pkg_check_modules(JSONCPP jsoncpp)
+
+include_directories(
+    ${JSONCPP_INCLUDE_DIRS}
+)
+
+link_directories(
+    ${JSONCPP_LIBRARY_DIRS}
+)
+
+set(EXE_NAME "HumanPoseShow")
 message(STATUS "Adding Example ${EXE_NAME}")
 
 add_executable(${EXE_NAME}
@@ -43,6 +55,7 @@ add_executable(${EXE_NAME}
 target_link_libraries(${EXE_NAME}
   Qt5::Widgets
   openpose
+  ${JSONCPP_LIBRARIES}
   ${examples_3rdparty_libraries}
 )
 

@@ -1,7 +1,7 @@
 add_subdirectory(calibration)
 add_subdirectory(deprecated)
 add_subdirectory(openpose)
-add_subdirectory(openpose_ui)
+add_subdirectory(HumanPoseShow)
 add_subdirectory(tutorial_api_cpp)
 add_subdirectory(tutorial_api_python)
 add_subdirectory(user_code)

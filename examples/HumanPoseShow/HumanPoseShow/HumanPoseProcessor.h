@@ -7,6 +7,9 @@
 
 struct HumanPoseParams
 {
+    bool loadFromFile(const std::string& paramFile);
+    bool saveToFile(const std::string& paramFile);
+
     struct InputParams
     {
         enum InputType
@@ -18,16 +21,16 @@ struct HumanPoseParams
             HikCamera,
             InputTypeNum
         };
-        InputType inputType = VideoFile;
+        InputType inputType = MindCamera;
         std::string videoPath = "datas/pose_tests/panoptic/dance2a/video.mp4";
         int viewNumber = 4;
         int cameraIndex = -1;
         int cameraTriggerMode = 0;
         double captureFps = -1.;
-        //std::string cameraResolution = "1224x1024";
-        //std::string cameraParamPath = "datas/pose_tests/mind_camera/test04/cameras/";
-        std::string cameraResolution = "-1x-1";
-        std::string cameraParamPath = "datas/pose_tests/panoptic/dance2a/cameras/";
+        std::string cameraResolution = "1224x1024";
+        std::string cameraParamPath = "datas/pose_tests/mind_camera/test04/cameras/";
+        //std::string cameraResolution = "-1x-1";
+        //std::string cameraParamPath = "datas/pose_tests/panoptic/dance2a/cameras/";
         bool frameUndistort = false;
     };
 
@@ -44,8 +47,8 @@ struct HumanPoseParams
             AlgoType3D
         };
         AlgoType algoType = AlgoTypeNo;
-        int minViews3d = -1;
-        std::string modelResolution = "-1x192";
+        int minViews3d = 2;
+        std::string modelResolution = "-1x256";
         std::string outputResolution = "-1x-1";
         bool batchProcess = false;
         bool realTimeProcess = false;

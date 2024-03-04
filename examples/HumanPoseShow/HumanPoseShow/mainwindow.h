@@ -33,6 +33,7 @@ public:
 
 private slots:
     void newTask();
+    void openTask();
     void saveTask();
     void about();
     void configMindCamera();
@@ -73,6 +74,7 @@ private:
     QAction* layoutVideoAct;
     QAction* layoutPageAct;
 
+    QString paramFile;
     HumanPoseParams humanPoseParams;
     std::shared_ptr<HumanPoseProcessor> humanPoseProcessor;
 };

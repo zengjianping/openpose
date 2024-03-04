@@ -31,5 +31,6 @@
         <file>images/VideoAreaCutEntr_select.png</file>
         <file>images/VideoAreaFull.png</file>
         <file>images/VideoAreaFullhover.png</file>
+        <file>images/open.png</file>
     </qresource>
 </RCC>
