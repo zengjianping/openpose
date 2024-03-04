@@ -5,5 +5,31 @@
         <file>images/save.png</file>
         <file>images/undo.png</file>
         <file>images/video_bg.jpg</file>
+        <file>images/VideoAreaCut1.png</file>
+        <file>images/VideoAreaCut1hover.png</file>
+        <file>images/VideoAreaCut2.png</file>
+        <file>images/VideoAreaCut2hover.png</file>
+        <file>images/VideoAreaCut3.png</file>
+        <file>images/VideoAreaCut3hover.png</file>
+        <file>images/VideoAreaCut4.png</file>
+        <file>images/VideoAreaCut4hover.png</file>
+        <file>images/VideoAreaCut5.png</file>
+        <file>images/VideoAreaCut5hover.png</file>
+        <file>images/VideoAreaCut6.png</file>
+        <file>images/VideoAreaCut6hover.png</file>
+        <file>images/VideoAreaCut7.png</file>
+        <file>images/VideoAreaCut7hover.png</file>
+        <file>images/VideoAreaCut8.png</file>
+        <file>images/VideoAreaCut8hover.png</file>
+        <file>images/VideoAreaCut9.png</file>
+        <file>images/VideoAreaCut9hover.png</file>
+        <file>images/VideoAreaCut10.png</file>
+        <file>images/VideoAreaCut10hover.png</file>
+        <file>images/VideoAreaCutBg.png</file>
+        <file>images/VideoAreaCutEntrance.png</file>
+        <file>images/VideoAreaCutEntr_hover.png</file>
+        <file>images/VideoAreaCutEntr_select.png</file>
+        <file>images/VideoAreaFull.png</file>
+        <file>images/VideoAreaFullhover.png</file>
     </qresource>
 </RCC>

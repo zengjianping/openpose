@@ -19,6 +19,8 @@ add_executable(${EXE_NAME}
   HumanPoseShow/main.cpp
   HumanPoseShow/mainwindow.h
   HumanPoseShow/mainwindow.cpp
+  HumanPoseShow/CommonUtils.h
+  HumanPoseShow/CommonUtils.cpp
   HumanPoseShow/VideoItemWidget.h
   HumanPoseShow/VideoItemWidget.cpp
   HumanPoseShow/VideoGroupWidget.h
@@ -27,6 +29,10 @@ add_executable(${EXE_NAME}
   HumanPoseShow/HumanPoseProcessor.cpp
   HumanPoseShow/StereoPoseRender.hpp
   HumanPoseShow/StereoPoseRender.cpp
+  HumanPoseShow/LayoutVideoWidget.h
+  HumanPoseShow/LayoutVideoWidget.cpp
+  HumanPoseShow/LayoutPageWidget.h
+  HumanPoseShow/LayoutPageWidget.cpp
   HumanPoseShow/MindCameraConfig.h
   HumanPoseShow/MindCameraConfig.cpp
   HumanPoseShow/MindCameraConfig.ui

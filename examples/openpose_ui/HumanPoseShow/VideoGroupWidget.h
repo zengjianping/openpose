@@ -19,6 +19,7 @@ public:
     void layoutVideos(int count, int group = -1);
     QWidget* getVideoWidget(int index);
     void setImage(int index, QPixmap& pixmap);
+    void resetAllImage();
 
 protected:
     void initializeUI();

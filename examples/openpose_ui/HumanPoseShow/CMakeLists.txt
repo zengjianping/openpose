@@ -30,12 +30,20 @@ set(PROJECT_SOURCES
         main.cpp
         mainwindow.cpp
         mainwindow.h
+        CommonUtils.h
+        CommonUtils.cpp
         VideoItemWidget.h
         VideoItemWidget.cpp
         VideoGroupWidget.h
         VideoGroupWidget.cpp
         HumanPoseProcessor.h
         HumanPoseProcessor.cpp
+        StereoPoseRender.hpp
+        StereoPoseRender.cpp
+        LayoutVideoWidget.h
+        LayoutVideoWidget.cpp
+        LayoutPageWidget.h
+        LayoutPageWidget.cpp
         capturethread.h
         capturethread.cpp
         MindCameraConfig.h

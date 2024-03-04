@@ -1,10 +1,10 @@
 #include "VideoGroupWidget.h"
 #include "VideoItemWidget.h"
+#include "CommonUtils.h"
 
 
 #define MAX_VIDEO_COUNT 64 // 当前支持的最大视频数
 #define INVALID_VIDEO_COUNT 18 //无效的视频框个数
-#define INVALID_VALUE -1
 
 enum
 {
@@ -18,15 +18,7 @@ enum
     VIDEO_LAYOUT_25    = 25,    // 视频布局25
     VIDEO_LAYOUT_32    = 32,    // 视频布局32
     VIDEO_LAYOUT_64    = 64,    // 视频布局64
-
 };
-
-#define DELETE_OBJECT(obj) \
-    if (obj) \
-    { \
-        delete obj; \
-        obj = 0; \
-    }
 
 VideoGroupWidget::VideoGroupWidget(QWidget *parent)
     : QWidget{parent}
@@ -101,7 +93,21 @@ void VideoGroupWidget::setImage(int index, QPixmap& pixmap)
 {
     VideoItemWidget *videoItem = qobject_cast<VideoItemWidget*>(videoItemVec[index]);
     videoItem->setImage(pixmap);
-    videoItem->update();
+}
+
+void VideoGroupWidget::resetAllImage()
+{
+    for (size_t i = 0;i < videoItemVec.size(); i++)
+    {
+        VideoItemWidget *videoItem = qobject_cast<VideoItemWidget*>(videoItemVec[i]);
+        videoItem->resetImage();
+    }
+
+    for (size_t i = 0;i < reservedVideoItemVec.size(); i++)
+    {
+        VideoItemWidget *videoItem = qobject_cast<VideoItemWidget*>(reservedVideoItemVec[i]);
+        videoItem->resetImage();
+    }
 }
 
 int VideoGroupWidget::getVideoIndex(int index)

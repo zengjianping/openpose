@@ -90,6 +90,8 @@ void MainWindow::calibrateCamera()
 
 void MainWindow::startExecute()
 {
+    setCursor(Qt::WaitCursor);
+
     if (!humanPoseProcessor.get())
         humanPoseProcessor = HumanPoseProcessor::createInstance(humanPoseParams);
     if (!humanPoseProcessor->isRunning())
@@ -102,15 +104,24 @@ void MainWindow::startExecute()
     bool sucDone = humanPoseProcessor.get() != nullptr;
     startExecuteAct->setEnabled(!sucDone);
     stopExecuteAct->setEnabled(sucDone);
+
+    unsetCursor();
 }
 
 void MainWindow::stopExecute()
 {
+    setCursor(Qt::WaitCursor);
+
     if (humanPoseProcessor->isRunning())
         humanPoseProcessor->stop();
     humanPoseProcessor.reset();
     startExecuteAct->setEnabled(true);
     stopExecuteAct->setEnabled(false);
+
+    widgetVideoGroup->resetAllImage();
+    widget3dPoseView->resetImage();
+
+    unsetCursor();
 }
 
 void MainWindow::exeOptionSaveOutput(bool checked)
@@ -147,7 +158,6 @@ void MainWindow::set3dPoseImage(const cv::Mat& image)
     QImage qimage((uchar*)image.data, image.cols, image.rows, image.step, QImage::Format_RGB888);
     QPixmap pixmap = QPixmap::fromImage(qimage.rgbSwapped());// 将 OpenCV 的 BGR 格式转换为 QImage 的 RGB 格式
     widget3dPoseView->setImage(pixmap);
-    widget3dPoseView->update();
 }
 
 void MainWindow::createActions()
