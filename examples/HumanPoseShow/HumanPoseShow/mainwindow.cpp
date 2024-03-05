@@ -1,12 +1,18 @@
 #include "mainwindow.h"
-#include "MindCameraConfig.h"
 #include "CommonUtils.h"
+#include "MindCameraConfig.h"
+#include "DialogInputConfig.h"
+#include "DialogOutputConfig.h"
+#include "DialogAlgoConfig.h"
 #include <QtWidgets>
 
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
+    humanPoseProcessor = HumanPoseProcessor::createInstance();
+    humanPoseProcessor->setCallback(this);
+
     widgetVideoGroup = new VideoGroupWidget(this);
     setCentralWidget(widgetVideoGroup);
 
@@ -111,40 +117,45 @@ void MainWindow::configHikCamera()
 
 void MainWindow::configInput()
 {
-    // TODO...
+    DialogInputConfig dlg(this);
+    dlg.setParams(humanPoseParams.inputParams);
+    if (QDialog::Accepted == dlg.exec())
+    {
+        dlg.getParams(humanPoseParams.inputParams);
+    }
 }
 
 void MainWindow::configOutput()
 {
-    // TODO...
+    DialogOutputConfig dlg(this);
+    dlg.setParams(humanPoseParams.outputParams);
+    if (QDialog::Accepted == dlg.exec())
+    {
+        dlg.getParams(humanPoseParams.outputParams);
+    }
 }
 
 void MainWindow::configAlgorithm()
 {
-    // TODO...
+    DialogAlgoConfig dlg(this);
+    dlg.setParams(humanPoseParams.algorithmParams);
+    if (QDialog::Accepted == dlg.exec())
+    {
+        dlg.getParams(humanPoseParams.algorithmParams);
+    }
 }
 
 void MainWindow::calibrateCamera()
 {
-    // TODO...
 }
 
 void MainWindow::startExecute()
 {
     setCursor(Qt::WaitCursor);
 
-    if (!humanPoseProcessor.get())
-        humanPoseProcessor = HumanPoseProcessor::createInstance(humanPoseParams);
     if (!humanPoseProcessor->isRunning())
-    {
-        humanPoseProcessor->setCallback(this);
-        humanPoseProcessor->start();
-    }
-    if (!humanPoseProcessor->isRunning())
-        humanPoseProcessor.reset();
-    bool sucDone = humanPoseProcessor.get() != nullptr;
-    startExecuteAct->setEnabled(!sucDone);
-    stopExecuteAct->setEnabled(sucDone);
+        humanPoseProcessor->start(humanPoseParams);
+    updateExecuteStatus();
 
     unsetCursor();
 }
@@ -154,15 +165,26 @@ void MainWindow::stopExecute()
     setCursor(Qt::WaitCursor);
 
     if (humanPoseProcessor->isRunning())
-        humanPoseProcessor->stop();
-    humanPoseProcessor.reset();
-    startExecuteAct->setEnabled(true);
-    stopExecuteAct->setEnabled(false);
-
-    widgetVideoGroup->resetAllImage();
-    widget3dPoseView->resetImage();
+        humanPoseProcessor->stop();    
+    updateExecuteStatus();
 
     unsetCursor();
+}
+
+void MainWindow::updateExecuteStatus()
+{
+    if (humanPoseProcessor->isRunning())
+    {
+        startExecuteAct->setEnabled(false);
+        stopExecuteAct->setEnabled(true);
+    }
+    else
+    {
+        startExecuteAct->setEnabled(true);
+        stopExecuteAct->setEnabled(false);
+        widgetVideoGroup->resetAllImage();
+        widget3dPoseView->resetImage();
+    }
 }
 
 void MainWindow::exeOptionSaveOutput(bool checked)
@@ -314,12 +336,11 @@ void MainWindow::createActions()
 
     QMenu *operMenu = menuBar()->addMenu(tr("操作"));
 
-    QAction *calibrateCameraAct = new QAction(tr("标定相机..."), this);
-    calibrateCameraAct->setStatusTip(tr("标定相机内参和外参"));
-    connect(calibrateCameraAct, &QAction::triggered, this, &MainWindow::calibrateCamera);
-    operMenu->addAction(calibrateCameraAct);
-
-    operMenu->addSeparator();
+    //QAction *calibrateCameraAct = new QAction(tr("标定相机..."), this);
+    //calibrateCameraAct->setStatusTip(tr("标定相机内参和外参"));
+    //connect(calibrateCameraAct, &QAction::triggered, this, &MainWindow::calibrateCamera);
+    //operMenu->addAction(calibrateCameraAct);
+    //operMenu->addSeparator();
 
     startExecuteAct = new QAction(tr("启动运行"), this);
     startExecuteAct->setStatusTip(tr("启动任务运行"));
@@ -398,7 +419,18 @@ void MainWindow::createStatusBar()
 
 void MainWindow::createDockWindows()
 {
-    QDockWidget *dock = new QDockWidget(tr("3D姿态视图"), this);
+    QDockWidget *dock;
+
+    dock = new QDockWidget(tr("相机标定"), this);
+    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    widgetCameraCalib = new CameraCalibWidget(dock);
+    widgetCameraCalib->setHumanPoseProcessor(humanPoseProcessor.get(), &humanPoseParams);
+    connect(widgetCameraCalib, &CameraCalibWidget::processStatusChanged, this, &MainWindow::updateExecuteStatus);
+    dock->setWidget(widgetCameraCalib);
+    addDockWidget(Qt::RightDockWidgetArea, dock);
+    viewMenu->addAction(dock->toggleViewAction());
+
+    dock = new QDockWidget(tr("3D姿态视图"), this);
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     widget3dPoseView = new VideoItemWidget(dock);
     dock->setWidget(widget3dPoseView);

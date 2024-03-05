@@ -45,6 +45,18 @@ add_executable(${EXE_NAME}
   HumanPoseShow/LayoutVideoWidget.cpp
   HumanPoseShow/LayoutPageWidget.h
   HumanPoseShow/LayoutPageWidget.cpp
+  HumanPoseShow/DialogOutputConfig.h
+  HumanPoseShow/DialogOutputConfig.cpp
+  HumanPoseShow/DialogOutputConfig.ui
+  HumanPoseShow/DialogInputConfig.h
+  HumanPoseShow/DialogInputConfig.cpp
+  HumanPoseShow/DialogInputConfig.ui
+  HumanPoseShow/DialogAlgoConfig.h
+  HumanPoseShow/DialogAlgoConfig.cpp
+  HumanPoseShow/DialogAlgoConfig.ui
+  HumanPoseShow/CameraCalibWidget.h
+  HumanPoseShow/CameraCalibWidget.cpp
+  HumanPoseShow/CameraCalibWidget.ui
   HumanPoseShow/MindCameraConfig.h
   HumanPoseShow/MindCameraConfig.cpp
   HumanPoseShow/MindCameraConfig.ui

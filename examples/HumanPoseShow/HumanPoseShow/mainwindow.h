@@ -8,6 +8,7 @@
 #include "VideoItemWidget.h"
 #include "LayoutVideoWidget.h"
 #include "LayoutPageWidget.h"
+#include "CameraCalibWidget.h"
 
 #include "HumanPoseProcessor.h"
 
@@ -51,6 +52,7 @@ private slots:
     void showLayoutVideoWidget();
     void showLayoutPageWidget();
     void layoutVideoGroup(int count);
+    void updateExecuteStatus();
 
 private:
     void createActions();
@@ -64,6 +66,7 @@ private:
     VideoGroupWidget *widgetVideoGroup;
     VideoItemWidget *widget3dPoseView;
     QListWidget *paragraphsList;
+    CameraCalibWidget *widgetCameraCalib;
 
     QActionGroup* exeOptionAlgoGroup;
     QAction *startExecuteAct;

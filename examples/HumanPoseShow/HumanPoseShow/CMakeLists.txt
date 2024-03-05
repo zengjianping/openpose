@@ -49,6 +49,18 @@ set(PROJECT_SOURCES
         LayoutVideoWidget.cpp
         LayoutPageWidget.h
         LayoutPageWidget.cpp
+        DialogOutputConfig.h
+        DialogOutputConfig.cpp
+        DialogOutputConfig.ui
+        DialogInputConfig.h
+        DialogInputConfig.cpp
+        DialogInputConfig.ui
+        DialogAlgoConfig.h
+        DialogAlgoConfig.cpp
+        DialogAlgoConfig.ui
+        CameraCalibWidget.h
+        CameraCalibWidget.cpp
+        CameraCalibWidget.ui
         capturethread.h
         capturethread.cpp
         MindCameraConfig.h

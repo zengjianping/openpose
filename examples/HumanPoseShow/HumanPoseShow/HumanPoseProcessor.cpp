@@ -8,33 +8,36 @@
 class HumanPoseProcessorOP : public HumanPoseProcessor
 {
 public:
-    HumanPoseProcessorOP(const HumanPoseParams& params);
+    HumanPoseProcessorOP();
     virtual ~HumanPoseProcessorOP();
 
 public:
     void setCallback(HumanPoseProcessorCallback* callback) override;
-    bool start() override;
+    bool start(const HumanPoseParams& params) override;
     void stop() override;
     bool isRunning() override;
 
+    bool queryCameraList(const HumanPoseParams& params, std::string& cameraType,
+                         std::vector<std::string>& cameraNames) override;
+    bool calibrateCameraIntrinsics(const HumanPoseParams& params) override;
+    bool calibrateCameraExtrinsics(const HumanPoseParams& params) override;
+
 private:
-    HumanPoseParams params_;
     HumanPoseProcessorCallback* callback_;
     std::shared_ptr<op::Wrapper> opWrapper_;
     std::chrono::time_point<std::chrono::high_resolution_clock> opTimer_;
 };
 
-std::shared_ptr<HumanPoseProcessor> HumanPoseProcessor::createInstance(const HumanPoseParams& params)
+std::shared_ptr<HumanPoseProcessor> HumanPoseProcessor::createInstance()
 {
     std::shared_ptr<HumanPoseProcessor> processor;
-    processor.reset(new HumanPoseProcessorOP(params));
+    processor.reset(new HumanPoseProcessorOP());
     return processor;
 }
 
 
-HumanPoseProcessorOP::HumanPoseProcessorOP(const HumanPoseParams& params)
+HumanPoseProcessorOP::HumanPoseProcessorOP()
 {
-    params_ = params;
     callback_ = nullptr;
 }
 
@@ -49,7 +52,7 @@ void HumanPoseProcessorOP::setCallback(HumanPoseProcessorCallback* callback)
 
 void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, HumanPoseProcessorCallback* callback);
 
-bool HumanPoseProcessorOP::start()
+bool HumanPoseProcessorOP::start(const HumanPoseParams& params)
 {
     try
     {
@@ -60,7 +63,7 @@ bool HumanPoseProcessorOP::start()
         op::opLog("Configuring OpenPose...", op::Priority::High);
         opWrapper_.reset(new op::Wrapper());
         //opWrapper_.reset(new op::Wrapper(op::ThreadManagerMode::AsynchronousOut));
-        configureWrapper(*opWrapper_, params_, callback_);
+        configureWrapper(*opWrapper_, params, callback_);
 
         // Start, run, and stop processing - exec() blocks this thread until OpenPose wrapper has finished
         op::opLog("Starting thread(s)...", op::Priority::High);
@@ -101,6 +104,21 @@ bool HumanPoseProcessorOP::isRunning()
     return opWrapper_.get() && opWrapper_->isRunning();
 }
 
+bool HumanPoseProcessorOP::queryCameraList(const HumanPoseParams& params, std::string& cameraType,
+                                           std::vector<std::string>& cameraNames)
+{
+    return false;
+}
+
+bool HumanPoseProcessorOP::calibrateCameraIntrinsics(const HumanPoseParams& params)
+{
+    return false;
+}
+
+bool HumanPoseProcessorOP::calibrateCameraExtrinsics(const HumanPoseParams& params)
+{
+    return false;
+}
 
 
 // This worker will just read and return all the jpg files in a directory
@@ -401,6 +419,13 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
         output_resolution = params.algorithmParams.outputResolution;
         batch_process = params.algorithmParams.batchProcess;
         process_real_time = params.algorithmParams.realTimeProcess;
+
+        if (params.outputParams.saveImage && !params.outputParams.imageSavePath.empty())
+            write_images = params.outputParams.imageSavePath;
+        if (params.outputParams.saveVideo && !params.outputParams.videoSavePath.empty())
+            write_video = params.outputParams.videoSavePath;
+        if (params.outputParams.saveVideo3d && !params.outputParams.video3dSavePath.empty())
+            write_video_3d = params.outputParams.video3dSavePath;
 
         // logging_level
         op::ConfigureLog::setPriorityThreshold(logging_level);

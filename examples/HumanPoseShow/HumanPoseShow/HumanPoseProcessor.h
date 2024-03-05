@@ -36,6 +36,12 @@ struct HumanPoseParams
 
     struct OutputParams
     {
+        bool saveImage = false;
+        std::string imageSavePath = "";
+        bool saveVideo = false;
+        std::string videoSavePath = "";
+        bool saveVideo3d = false;
+        std::string video3dSavePath = "";
     };
 
     struct AlgorithmParams
@@ -69,16 +75,21 @@ public:
 class HumanPoseProcessor
 {
 public:
-    static std::shared_ptr<HumanPoseProcessor> createInstance(const HumanPoseParams& params);
+    static std::shared_ptr<HumanPoseProcessor> createInstance();
 
 public:
     virtual void setCallback(HumanPoseProcessorCallback* callback) = 0;
-    virtual bool start() = 0;
+    virtual bool start(const HumanPoseParams& params) = 0;
     virtual void stop() = 0;
     virtual bool isRunning() = 0;
 
+    virtual bool queryCameraList(const HumanPoseParams& params, std::string& cameraType,
+                                 std::vector<std::string>& cameraNames) = 0;
+    virtual bool calibrateCameraIntrinsics(const HumanPoseParams& params) = 0;
+    virtual bool calibrateCameraExtrinsics(const HumanPoseParams& params) = 0;
+
 private:
-    HumanPoseParams params_;
+    //HumanPoseParams params_;
 };
 
 
