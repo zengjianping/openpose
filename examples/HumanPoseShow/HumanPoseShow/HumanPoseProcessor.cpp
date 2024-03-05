@@ -3,6 +3,7 @@
 #include "openpose/headers.hpp"
 #include <openpose/utilities/profiler.hpp>
 #include <json/json.h>
+#include "CameraApi.h"
 
 
 class HumanPoseProcessorOP : public HumanPoseProcessor
@@ -19,8 +20,6 @@ public:
 
     bool queryCameraList(const HumanPoseParams& params, std::string& cameraType,
                          std::vector<std::string>& cameraNames) override;
-    bool calibrateCameraIntrinsics(const HumanPoseParams& params) override;
-    bool calibrateCameraExtrinsics(const HumanPoseParams& params) override;
 
 private:
     HumanPoseProcessorCallback* callback_;
@@ -104,20 +103,95 @@ bool HumanPoseProcessorOP::isRunning()
     return opWrapper_.get() && opWrapper_->isRunning();
 }
 
+bool enumerateMindCamera(std::vector<std::string>& cameraNames)
+{
+    tSdkCameraDevInfo cameraList[16];
+    int cameraCount = 15;
+    CameraSdkStatus status = CameraEnumerateDevice(cameraList, &cameraCount);
+
+    if (status == CAMERA_STATUS_SUCCESS && cameraCount > 0)
+    {
+        std::sort(&cameraList[0], &cameraList[cameraCount], [](tSdkCameraDevInfo& a, tSdkCameraDevInfo& b)
+                                                              {return strcmp(a.acSn, b.acSn) <= 0;});
+        for (int i = 0; i < cameraCount; i++)
+            cameraNames.push_back(cameraList[i].acSn);
+        return true;
+    }
+    return false;
+}
+
 bool HumanPoseProcessorOP::queryCameraList(const HumanPoseParams& params, std::string& cameraType,
                                            std::vector<std::string>& cameraNames)
 {
+    if (params.inputParams.inputType == HumanPoseParams::InputParams::MindCamera)
+    {
+        if (enumerateMindCamera(cameraNames))
+        {
+            if (cameraNames.size() > 0)
+            {
+                cameraType = "迈德威视相机";
+                return true;
+            }
+        }
+    }
+
     return false;
 }
 
-bool HumanPoseProcessorOP::calibrateCameraIntrinsics(const HumanPoseParams& params)
+bool calibrateCameraIntrinsics(const std::vector<std::string>& cameraNames,
+    const std::string& calibrateDir, const std::string& gridLayout, float gridSize)
 {
-    return false;
+    try
+    {
+        int flags = cv::CALIB_RATIONAL_MODEL; // 8 parameters
+        bool saveImagesWithCorners = true;
+        float gridSqureSizeMm = (float)gridSize;
+        op::Point<int> gridInnerCorners = op::flagsToPoint(op::String(gridLayout), "11x8");
+
+        for (size_t i = 0; i < cameraNames.size(); i++)
+        {
+            // Run calibration
+            op::opLog("Running calibration (intrinsic parameters)...", op::Priority::High);
+            std::string calibrationImageDir = op::formatAsDirectory(calibrateDir+"/intrinsics/" + cameraNames[i]);
+            op::estimateAndSaveIntrinsics(gridInnerCorners, gridSqureSizeMm, flags,
+                op::formatAsDirectory(calibrateDir), calibrationImageDir, cameraNames[i],
+                saveImagesWithCorners, false);
+            op::opLog("Intrinsic calibration completed!", op::Priority::High);
+        }
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
 }
 
-bool HumanPoseProcessorOP::calibrateCameraExtrinsics(const HumanPoseParams& params)
+bool calibrateCameraExtrinsics(const std::vector<std::string>& cameraNames,
+    const std::string& calibrateDir, const std::string& gridLayout, float gridSize)
 {
-    return false;
+    try
+    {
+        bool saveImagesWithCorners = true;
+        float gridSqureSizeMm = (float)gridSize;
+        op::Point<int> gridInnerCorners = op::flagsToPoint(op::String(gridLayout), "11x8");
+        std::string calibrationImageDir = op::formatAsDirectory(calibrateDir+"/extrinsics/");
+
+        for (size_t i = 0; i < cameraNames.size() - 1; i++)
+        {
+            // Run calibration
+            op::opLog("Running calibration (extrinsic parameters)...", op::Priority::High);
+            op::estimateAndSaveExtrinsics(calibrateDir, calibrationImageDir,
+                gridInnerCorners, gridSqureSizeMm, i, i+1, true, i > 0);
+            op::opLog("Extrinsic calibration completed!", op::Priority::High);
+        }
+        return true;
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
 }
 
 

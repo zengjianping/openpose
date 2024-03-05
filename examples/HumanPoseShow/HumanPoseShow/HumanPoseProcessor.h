@@ -85,12 +85,15 @@ public:
 
     virtual bool queryCameraList(const HumanPoseParams& params, std::string& cameraType,
                                  std::vector<std::string>& cameraNames) = 0;
-    virtual bool calibrateCameraIntrinsics(const HumanPoseParams& params) = 0;
-    virtual bool calibrateCameraExtrinsics(const HumanPoseParams& params) = 0;
 
 private:
     //HumanPoseParams params_;
 };
+
+bool calibrateCameraIntrinsics(const std::vector<std::string>& cameraNames,
+    const std::string& calibrateDir, const std::string& gridLayout, float gridSize);
+bool calibrateCameraExtrinsics(const std::vector<std::string>& cameraNames,
+    const std::string& calibrateDir, const std::string& gridLayout, float gridSize);
 
 
 #endif // HUMAN_POSE_PROCESSOR_H_

@@ -33,9 +33,14 @@ private slots:
     void on_buttonExtStartCalibrate_clicked();
 
 private:
+    void initializeUI();
+    void updateUI();
+
+private:
     Ui::CameraCalibWidget *ui;
     HumanPoseParams *humanPoseParams = nullptr;
     HumanPoseProcessor *humanPoseProcessor = nullptr;
+    std::vector<std::string> cameraNames;
 };
 
 #endif // CAMERACALIBWIDGET_H

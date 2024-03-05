@@ -57,28 +57,48 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="CameraCalibWidget.cpp" line="43"/>
-        <location filename="CameraCalibWidget.cpp" line="84"/>
-        <location filename="CameraCalibWidget.cpp" line="93"/>
-        <location filename="CameraCalibWidget.cpp" line="134"/>
-        <location filename="CameraCalibWidget.cpp" line="143"/>
+        <location filename="CameraCalibWidget.ui" line="258"/>
+        <source>标定棋盘信息</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="CameraCalibWidget.ui" line="287"/>
+        <source>方格尺寸：</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="CameraCalibWidget.ui" line="304"/>
+        <source>毫米</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="CameraCalibWidget.ui" line="327"/>
+        <source>方格布局：</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="CameraCalibWidget.cpp" line="64"/>
+        <location filename="CameraCalibWidget.cpp" line="109"/>
+        <location filename="CameraCalibWidget.cpp" line="118"/>
+        <location filename="CameraCalibWidget.cpp" line="161"/>
+        <location filename="CameraCalibWidget.cpp" line="170"/>
         <source>提示</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="CameraCalibWidget.cpp" line="43"/>
+        <location filename="CameraCalibWidget.cpp" line="64"/>
         <source>查询相机失败！</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="CameraCalibWidget.cpp" line="84"/>
-        <location filename="CameraCalibWidget.cpp" line="134"/>
+        <location filename="CameraCalibWidget.cpp" line="109"/>
+        <location filename="CameraCalibWidget.cpp" line="161"/>
         <source>相机标定时间较长，请耐心等待！</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="CameraCalibWidget.cpp" line="93"/>
-        <location filename="CameraCalibWidget.cpp" line="143"/>
+        <location filename="CameraCalibWidget.cpp" line="118"/>
+        <location filename="CameraCalibWidget.cpp" line="170"/>
         <source>标定失败！</source>
         <translation type="unfinished"></translation>
     </message>

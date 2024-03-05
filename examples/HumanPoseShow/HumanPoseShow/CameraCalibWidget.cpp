@@ -1,12 +1,16 @@
 #include "CameraCalibWidget.h"
 #include "ui_CameraCalibWidget.h"
 #include <QMessageBox>
+#include <QDir>
+
 
 CameraCalibWidget::CameraCalibWidget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::CameraCalibWidget)
 {
     ui->setupUi(this);
+    initializeUI();
+    updateUI();
 }
 
 CameraCalibWidget::~CameraCalibWidget()
@@ -20,20 +24,37 @@ void CameraCalibWidget::setHumanPoseProcessor(HumanPoseProcessor *processor, Hum
     humanPoseParams = params;
 }
 
+void CameraCalibWidget::initializeUI()
+{
+    ui->editChessGridSize->setText(QString::number(30));
+    ui->editChessGridLayout->setText("11x8");
+}
+
+void CameraCalibWidget::updateUI()
+{
+    bool enabled = ui->combCameraList->count();
+    ui->buttonIntStartCapture->setEnabled(enabled);
+    ui->buttonIntStopCapture->setEnabled(enabled);
+    ui->buttonIntStartCalibrate->setEnabled(enabled);
+    ui->buttonExtStartCapture->setEnabled(enabled);
+    ui->buttonExtStopCapture->setEnabled(enabled);
+    ui->buttonExtStartCalibrate->setEnabled(enabled);
+}
+
 void CameraCalibWidget::on_combCameraList_currentIndexChanged(int index)
 {
 }
 
 void CameraCalibWidget::on_buttonCameraInfo_clicked()
 {
+    ui->combCameraList->clear();
     if (humanPoseProcessor)
     {
         HumanPoseParams params = *humanPoseParams;
         std::string cameraType;
-        std::vector<std::string> cameraNames;
+        cameraNames.clear();
         if (humanPoseProcessor->queryCameraList(params, cameraType, cameraNames))
         {
-            ui->combCameraList->clear();
             for (const std::string& name : cameraNames)
                 ui->combCameraList->addItem(QString::fromStdString(name));
             ui->editCameraType->setText(QString::fromStdString(cameraType));
@@ -43,6 +64,7 @@ void CameraCalibWidget::on_buttonCameraInfo_clicked()
             QMessageBox::information(this, tr("提示"), tr("查询相机失败！"));
         }
     }
+    updateUI();
 }
 
 void CameraCalibWidget::on_buttonIntStartCapture_clicked()
@@ -59,7 +81,10 @@ void CameraCalibWidget::on_buttonIntStartCapture_clicked()
         params.outputParams.saveVideo3d = false;
         params.outputParams.saveImage = true;
         std::string cameraName = ui->combCameraList->currentText().toStdString();
-        params.outputParams.imageSavePath = params.inputParams.cameraParamPath + "/intrinsics/" + cameraName;
+        std::string calibPath = params.inputParams.cameraParamPath;
+        QDir calibDir(QString::fromStdString(calibPath));
+        calibDir.mkdir("intrinsics");
+        params.outputParams.imageSavePath = calibPath + "/intrinsics/" + cameraName;
         humanPoseProcessor->start(params);
         emit processStatusChanged();
         unsetCursor();
@@ -86,15 +111,21 @@ void CameraCalibWidget::on_buttonIntStartCalibrate_clicked()
         if (res == QMessageBox::Ok)
         {
             setCursor(Qt::WaitCursor);
+
             HumanPoseParams params = *humanPoseParams;
-            bool res = humanPoseProcessor->calibrateCameraIntrinsics(params);
+            std::string calibrateDir = params.inputParams.cameraParamPath;
+            std::string gridLayout = ui->editChessGridLayout->text().toStdString();
+            float gridSize = ui->editChessGridSize->text().toDouble();
+            bool res = calibrateCameraIntrinsics(cameraNames, calibrateDir, gridLayout, gridSize);
+
             unsetCursor();
-            if (!res)
+            if (res)
+                QMessageBox::information(this, tr("提示"), tr("标定成功！"));
+            else
                 QMessageBox::information(this, tr("提示"), tr("标定失败！"));
         }
     }
 }
-
 
 void CameraCalibWidget::on_buttonExtStartCapture_clicked()
 {
@@ -109,7 +140,10 @@ void CameraCalibWidget::on_buttonExtStartCapture_clicked()
         params.outputParams.saveVideo = false;
         params.outputParams.saveVideo3d = false;
         params.outputParams.saveImage = true;
-        params.outputParams.imageSavePath = params.inputParams.cameraParamPath + "/extrinsics";
+        std::string calibPath = params.inputParams.cameraParamPath;
+        QDir calibDir(QString::fromStdString(calibPath));
+        calibDir.mkdir("extrinsics");
+        params.outputParams.imageSavePath = calibPath + "/extrinsics";
         humanPoseProcessor->start(params);
         emit processStatusChanged();
         unsetCursor();
@@ -136,10 +170,17 @@ void CameraCalibWidget::on_buttonExtStartCalibrate_clicked()
         if (res == QMessageBox::Ok)
         {
             setCursor(Qt::WaitCursor);
+
             HumanPoseParams params = *humanPoseParams;
-            bool res = humanPoseProcessor->calibrateCameraExtrinsics(params);
+            std::string calibrateDir = params.inputParams.cameraParamPath;
+            std::string gridLayout = ui->editChessGridLayout->text().toStdString();
+            float gridSize = ui->editChessGridSize->text().toDouble();
+            bool res = calibrateCameraExtrinsics(cameraNames, calibrateDir, gridLayout, gridSize);
+
             unsetCursor();
-            if (!res)
+            if (res)
+                QMessageBox::information(this, tr("提示"), tr("标定成功！"));
+            else
                 QMessageBox::information(this, tr("提示"), tr("标定失败！"));
         }
     }
