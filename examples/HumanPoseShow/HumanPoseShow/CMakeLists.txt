@@ -45,6 +45,8 @@ set(PROJECT_SOURCES
         HumanPoseProcessor.cpp
         StereoPoseRender.hpp
         StereoPoseRender.cpp
+        PoseRenderWidget.h
+        PoseRenderWidget.cpp
         LayoutVideoWidget.h
         LayoutVideoWidget.cpp
         LayoutPageWidget.h
@@ -61,6 +63,9 @@ set(PROJECT_SOURCES
         CameraCalibWidget.h
         CameraCalibWidget.cpp
         CameraCalibWidget.ui
+        DialogTaskList.h
+        DialogTaskList.cpp
+        DialogTaskList.ui
         capturethread.h
         capturethread.cpp
         MindCameraConfig.h

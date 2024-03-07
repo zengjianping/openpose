@@ -53,7 +53,7 @@ void CameraCalibWidget::on_buttonCameraInfo_clicked()
         HumanPoseParams params = *humanPoseParams;
         std::string cameraType;
         cameraNames.clear();
-        if (humanPoseProcessor->queryCameraList(params, cameraType, cameraNames))
+        if (queryCameraList(params, cameraType, cameraNames))
         {
             for (const std::string& name : cameraNames)
                 ui->combCameraList->addItem(QString::fromStdString(name));

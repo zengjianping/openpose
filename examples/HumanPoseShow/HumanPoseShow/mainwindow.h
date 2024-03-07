@@ -11,6 +11,7 @@
 #include "CameraCalibWidget.h"
 
 #include "HumanPoseProcessor.h"
+#include "PoseRenderWidget.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -29,8 +30,11 @@ public:
     ~MainWindow();
 
 public:
+    bool initialize();
     void set2dPoseImage(int index, const cv::Mat& image) override;
     void set3dPoseImage(const cv::Mat& image) override;
+    void setKeypoints(const op::Array<float>& poseKeypoints3D, const op::Array<float>& faceKeypoints3D,
+        const op::Array<float>& leftHandKeypoints3D, const op::Array<float>& rightHandKeypoints3D) override;
 
 private slots:
     void newTask();
@@ -55,6 +59,10 @@ private slots:
     void updateExecuteStatus();
 
 private:
+    int newTaskHelper();
+    int openTaskHelper();
+    int saveTaskHelper();
+
     void createActions();
     void createStatusBar();
     void createDockWindows();
@@ -64,7 +72,8 @@ private:
     LayoutVideoWidget *widgetVideoLayout;    //视频布局
     LayoutPageWidget *widgetVideoPage;       //视频分页
     VideoGroupWidget *widgetVideoGroup;
-    VideoItemWidget *widget3dPoseView;
+    //VideoItemWidget *widget3dPoseView;
+    PoseRenderWidget *widgetPoseRender;
     QListWidget *paragraphsList;
     CameraCalibWidget *widgetCameraCalib;
 
@@ -77,7 +86,7 @@ private:
     QAction* layoutVideoAct;
     QAction* layoutPageAct;
 
-    QString paramFile;
+    QString taskName, taskFile;
     HumanPoseParams humanPoseParams;
     std::shared_ptr<HumanPoseProcessor> humanPoseProcessor;
 };

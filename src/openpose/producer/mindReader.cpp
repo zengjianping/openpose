@@ -257,6 +257,8 @@ namespace op
         mUndistortImage = undistortImage;
         mResolution = cameraResolution;
         mCameraParameterPath = cameraParameterPath;
+        if (mCameraParameterPath.back() != '/')
+            mCameraParameterPath.append(1, '/');
         mCaptureFps = captureFps;
 
         try

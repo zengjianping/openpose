@@ -79,9 +79,11 @@
     <message>
         <location filename="CameraCalibWidget.cpp" line="64"/>
         <location filename="CameraCalibWidget.cpp" line="109"/>
-        <location filename="CameraCalibWidget.cpp" line="118"/>
-        <location filename="CameraCalibWidget.cpp" line="161"/>
-        <location filename="CameraCalibWidget.cpp" line="170"/>
+        <location filename="CameraCalibWidget.cpp" line="123"/>
+        <location filename="CameraCalibWidget.cpp" line="125"/>
+        <location filename="CameraCalibWidget.cpp" line="168"/>
+        <location filename="CameraCalibWidget.cpp" line="182"/>
+        <location filename="CameraCalibWidget.cpp" line="184"/>
         <source>提示</source>
         <translation type="unfinished"></translation>
     </message>
@@ -92,13 +94,19 @@
     </message>
     <message>
         <location filename="CameraCalibWidget.cpp" line="109"/>
-        <location filename="CameraCalibWidget.cpp" line="161"/>
+        <location filename="CameraCalibWidget.cpp" line="168"/>
         <source>相机标定时间较长，请耐心等待！</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="CameraCalibWidget.cpp" line="118"/>
-        <location filename="CameraCalibWidget.cpp" line="170"/>
+        <location filename="CameraCalibWidget.cpp" line="123"/>
+        <location filename="CameraCalibWidget.cpp" line="182"/>
+        <source>标定成功！</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="CameraCalibWidget.cpp" line="125"/>
+        <location filename="CameraCalibWidget.cpp" line="184"/>
         <source>标定失败！</source>
         <translation type="unfinished"></translation>
     </message>
@@ -283,254 +291,326 @@
     </message>
 </context>
 <context>
+    <name>DialogTaskList</name>
+    <message>
+        <location filename="DialogTaskList.ui" line="14"/>
+        <source>Dialog</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="DialogTaskList.ui" line="42"/>
+        <source>任务列表：</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="DialogTaskList.ui" line="67"/>
+        <source>删除选择的任务</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="DialogTaskList.ui" line="88"/>
+        <source>任务名称：</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="DialogTaskList.cpp" line="48"/>
+        <source>任务设置</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="DialogTaskList.cpp" line="115"/>
+        <location filename="DialogTaskList.cpp" line="145"/>
+        <source>提示</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="DialogTaskList.cpp" line="115"/>
+        <source>与已有任务同名！</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="DialogTaskList.cpp" line="133"/>
+        <source>删除任务</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="DialogTaskList.cpp" line="133"/>
+        <source>确定要删除此任务吗？</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="DialogTaskList.cpp" line="145"/>
+        <source>删除任务失败！</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>MainWindow</name>
     <message>
-        <location filename="mainwindow.cpp" line="417"/>
+        <location filename="mainwindow.cpp" line="442"/>
         <source>Ready</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="276"/>
-        <location filename="mainwindow.cpp" line="277"/>
+        <location filename="mainwindow.cpp" line="301"/>
+        <location filename="mainwindow.cpp" line="302"/>
         <source>文件</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="323"/>
+        <location filename="mainwindow.cpp" line="348"/>
         <source>配置数据输入参数</source>
         <oldsource>保存应用配置</oldsource>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="305"/>
+        <location filename="mainwindow.cpp" line="330"/>
         <source>退出</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="280"/>
+        <location filename="mainwindow.cpp" line="37"/>
+        <location filename="mainwindow.cpp" line="45"/>
+        <location filename="mainwindow.cpp" line="47"/>
+        <location filename="mainwindow.cpp" line="75"/>
+        <location filename="mainwindow.cpp" line="77"/>
+        <location filename="mainwindow.cpp" line="103"/>
+        <location filename="mainwindow.cpp" line="105"/>
+        <location filename="mainwindow.cpp" line="178"/>
+        <source>提示</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="mainwindow.cpp" line="37"/>
+        <location filename="mainwindow.cpp" line="77"/>
+        <source>打开任务失败！</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="mainwindow.cpp" line="75"/>
+        <source>打开任务成功！</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="mainwindow.cpp" line="66"/>
+        <location filename="mainwindow.cpp" line="94"/>
+        <source>3D人体姿态识别 - %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="mainwindow.cpp" line="103"/>
+        <source>保存任务（%1）成功！</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="mainwindow.cpp" line="105"/>
+        <source>保存任务（%1）失败！</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="mainwindow.cpp" line="305"/>
         <source>新建任务</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="282"/>
+        <location filename="mainwindow.cpp" line="307"/>
         <source>新建识别任务</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="296"/>
+        <location filename="mainwindow.cpp" line="321"/>
         <source>保存任务...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="298"/>
+        <location filename="mainwindow.cpp" line="323"/>
         <source>保存识别任务</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="307"/>
+        <location filename="mainwindow.cpp" line="332"/>
         <source>退出应用程序</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="309"/>
+        <location filename="mainwindow.cpp" line="334"/>
         <source>编辑</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="316"/>
+        <location filename="mainwindow.cpp" line="341"/>
         <source>配置相机</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="322"/>
+        <location filename="mainwindow.cpp" line="347"/>
         <source>配置输入...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="50"/>
-        <location filename="mainwindow.cpp" line="78"/>
-        <source>选择文件</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="mainwindow.cpp" line="65"/>
-        <source>打开任务成功 &apos;%1&apos;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="mainwindow.cpp" line="69"/>
-        <source>打开任务失败 &apos;%1&apos;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="mainwindow.cpp" line="91"/>
-        <source>保存任务成功 &apos;%1&apos;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="mainwindow.cpp" line="96"/>
-        <source>保存任务失败 &apos;%1&apos;</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="mainwindow.cpp" line="288"/>
+        <location filename="mainwindow.cpp" line="313"/>
         <source>打开任务</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="290"/>
+        <location filename="mainwindow.cpp" line="45"/>
+        <source>新建任务成功！</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="mainwindow.cpp" line="47"/>
+        <source>新建任务失败！</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="mainwindow.cpp" line="178"/>
+        <source>任务启动失败！</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="mainwindow.cpp" line="315"/>
         <source>打开识别任务</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="327"/>
+        <location filename="mainwindow.cpp" line="352"/>
         <source>配置输出...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="328"/>
+        <location filename="mainwindow.cpp" line="353"/>
         <source>配置数据输出参数</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="332"/>
+        <location filename="mainwindow.cpp" line="357"/>
         <source>配置算法...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="333"/>
+        <location filename="mainwindow.cpp" line="358"/>
         <source>配置算法处理参数</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="337"/>
+        <location filename="mainwindow.cpp" line="362"/>
         <source>操作</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="345"/>
+        <location filename="mainwindow.cpp" line="370"/>
         <source>启动运行</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="346"/>
+        <location filename="mainwindow.cpp" line="371"/>
         <source>启动任务运行</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="350"/>
+        <location filename="mainwindow.cpp" line="375"/>
         <source>停止运行</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="351"/>
+        <location filename="mainwindow.cpp" line="376"/>
         <source>停止任务运行</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="356"/>
+        <location filename="mainwindow.cpp" line="381"/>
         <source>运行选项</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="358"/>
-        <source>保存输出数据</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="mainwindow.cpp" line="365"/>
+        <location filename="mainwindow.cpp" line="390"/>
         <source>不启用算法</source>
         <oldsource>不做算法处理</oldsource>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="370"/>
+        <location filename="mainwindow.cpp" line="395"/>
         <source>2D姿态识别</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="375"/>
+        <location filename="mainwindow.cpp" line="400"/>
         <source>3D姿态识别</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="386"/>
-        <location filename="mainwindow.cpp" line="387"/>
+        <location filename="mainwindow.cpp" line="411"/>
+        <location filename="mainwindow.cpp" line="412"/>
         <source>视图</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="389"/>
+        <location filename="mainwindow.cpp" line="414"/>
         <source>分隔</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="393"/>
+        <location filename="mainwindow.cpp" line="418"/>
         <source>分屏</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="398"/>
+        <location filename="mainwindow.cpp" line="423"/>
         <source>帮助</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="400"/>
+        <location filename="mainwindow.cpp" line="425"/>
         <source>关于...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="401"/>
+        <location filename="mainwindow.cpp" line="426"/>
         <source>显示应用程序信息</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="403"/>
+        <location filename="mainwindow.cpp" line="428"/>
         <source>关于Qt...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="404"/>
+        <location filename="mainwindow.cpp" line="429"/>
         <source>显示Qt库信息</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="433"/>
+        <location filename="mainwindow.cpp" line="458"/>
         <source>3D姿态视图</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="440"/>
+        <location filename="mainwindow.cpp" line="467"/>
         <source>3D姿态数据</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="424"/>
+        <location filename="mainwindow.cpp" line="449"/>
         <source>相机标定</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="312"/>
+        <location filename="mainwindow.cpp" line="337"/>
         <source>迈德威视相机...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="23"/>
-        <source>3D人体姿态识别</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="mainwindow.cpp" line="103"/>
+        <location filename="mainwindow.cpp" line="118"/>
         <source>关于3D人体姿态识别</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="104"/>
+        <location filename="mainwindow.cpp" line="119"/>
         <source>使用多个相机建立人体姿态的三维模型。</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="314"/>
+        <location filename="mainwindow.cpp" line="339"/>
         <source>海康威视相机...</source>
         <translation type="unfinished"></translation>
     </message>

@@ -4,6 +4,7 @@
 #include "DialogInputConfig.h"
 #include "DialogOutputConfig.h"
 #include "DialogAlgoConfig.h"
+#include "DialogTaskList.h"
 #include <QtWidgets>
 
 
@@ -20,8 +21,6 @@ MainWindow::MainWindow(QWidget *parent)
     createStatusBar();
     createDockWindows();
 
-    setWindowTitle(tr("3D人体姿态识别"));
-
     setUnifiedTitleAndToolBarOnMac(true);
 }
 
@@ -31,71 +30,87 @@ MainWindow::~MainWindow()
     DELETE_OBJECT(widgetVideoPage);
 }
 
+bool MainWindow::initialize()
+{
+    int res = openTaskHelper();
+    if (res == 1)
+        QMessageBox::information(this, tr("提示"), tr("打开任务失败！"), QMessageBox::Ok);
+    return res == 0;
+}
+
 void MainWindow::newTask()
 {
-    QGuiApplication::setOverrideCursor(Qt::WaitCursor);
-    if (!paramFile.isEmpty())
-        humanPoseParams.saveToFile(paramFile.toStdString());
-    paramFile.clear();
-    humanPoseParams = HumanPoseParams();
-    QGuiApplication::restoreOverrideCursor();
+    int res = newTaskHelper();
+    if (res == 0)
+        QMessageBox::information(this, tr("提示"), tr("新建任务成功！"), QMessageBox::Ok);
+    else if (res == 1)
+        QMessageBox::information(this, tr("提示"), tr("新建任务失败！"), QMessageBox::Ok);
+}
 
-    QMessageBox msgBox;
-    msgBox.setText("新建任务成功！");
-    msgBox.exec();
+int MainWindow::newTaskHelper()
+{
+    DialogTaskList dialog(this, true);
+    if (QDialog::Accepted != dialog.exec())
+        return 2;
+
+    QString newTaskName, newTaskFile, calibrationDir;
+    dialog.getCurrentTaskInfo(newTaskName, newTaskFile, calibrationDir);
+    HumanPoseParams params = HumanPoseParams();
+    params.inputParams.cameraParamPath = calibrationDir.toStdString();
+    if (!params.saveToFile(newTaskFile.toStdString()))
+        return 1;
+    humanPoseParams = params;
+
+    taskName = newTaskName;
+    taskFile = newTaskFile;
+    setWindowTitle(tr("3D人体姿态识别 - %1").arg(taskName));
+
+    return 0;
 }
 
 void MainWindow::openTask()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("选择文件"), ".", "Json Files (*.json)");
-    if (fileName.isEmpty())
-        return;
-    QString newParamFile = fileName;
+    int res = openTaskHelper();
+    if (res == 0)
+        QMessageBox::information(this, tr("提示"), tr("打开任务成功！"), QMessageBox::Ok);
+    else if (res == 1)
+        QMessageBox::information(this, tr("提示"), tr("打开任务失败！"), QMessageBox::Ok);
+}
 
-    QGuiApplication::setOverrideCursor(Qt::WaitCursor);
-    //if (!paramFile.isEmpty())
-    //    humanPoseParams.saveToFile(paramFile.toStdString());
-    bool res = humanPoseParams.loadFromFile(newParamFile.toStdString());
-    QGuiApplication::restoreOverrideCursor();
+int MainWindow::openTaskHelper()
+{
+    //QString fileName = QFileDialog::getOpenFileName(this, tr("选择文件"), ".", "Json Files (*.json)");
+    DialogTaskList dialog(this, false);
+    if (QDialog::Accepted != dialog.exec())
+        return 2;
 
-    QMessageBox msgBox;
-    if (res)
-    {
-        paramFile = newParamFile;
-        msgBox.setText(tr("打开任务成功 '%1'").arg(newParamFile));
-    }
-    else
-    {
-        msgBox.setText(tr("打开任务失败 '%1'").arg(newParamFile));
-    }
-    msgBox.exec();
+    QString newTaskName, newTaskFile, calibrationDir;
+    dialog.getCurrentTaskInfo(newTaskName, newTaskFile, calibrationDir);
+    if (!humanPoseParams.loadFromFile(newTaskFile.toStdString()))
+        return 1;
+
+    taskName = newTaskName;
+    taskFile = newTaskFile;
+    setWindowTitle(tr("3D人体姿态识别 - %1").arg(taskName));
+
+    return 0;
 }
 
 void MainWindow::saveTask()
 {
-    if (paramFile.isEmpty())
-    {
-        QString fileName = QFileDialog::getSaveFileName(this, tr("选择文件"), ".", "Json Files (*.json)");
-        if (fileName.isEmpty())
-            return;
-        paramFile = fileName;
-    }
+    int res = saveTaskHelper();
+    if (res == 0)
+        QMessageBox::information(this, tr("提示"), tr("保存任务（%1）成功！").arg(taskName), QMessageBox::Ok);
+    else if (res == 1)
+        QMessageBox::information(this, tr("提示"), tr("保存任务（%1）失败！").arg(taskName), QMessageBox::Ok);
+}
 
-    QGuiApplication::setOverrideCursor(Qt::WaitCursor);
-    bool res = humanPoseParams.saveToFile(paramFile.toStdString());
-    QGuiApplication::restoreOverrideCursor();
-
-    QMessageBox msgBox;
-    if (res)
-    {
-        msgBox.setText(tr("保存任务成功 '%1'").arg(paramFile));
-    }
-    else
-    {
-        paramFile.clear();
-        msgBox.setText(tr("保存任务失败 '%1'").arg(paramFile));
-    }
-    msgBox.exec();
+int MainWindow::saveTaskHelper()
+{
+    //QString fileName = QFileDialog::getSaveFileName(this, tr("选择文件"), ".", "Json Files (*.json)");
+    if (!humanPoseParams.saveToFile(taskFile.toStdString()))
+        return 1;
+    return 0;
 }
 
 void MainWindow::about()
@@ -158,6 +173,9 @@ void MainWindow::startExecute()
     updateExecuteStatus();
 
     unsetCursor();
+
+    if (!humanPoseProcessor->isRunning())
+        QMessageBox::warning(this, tr("提示"), tr("任务启动失败！"), QMessageBox::Ok);
 }
 
 void MainWindow::stopExecute()
@@ -183,7 +201,8 @@ void MainWindow::updateExecuteStatus()
         startExecuteAct->setEnabled(true);
         stopExecuteAct->setEnabled(false);
         widgetVideoGroup->resetAllImage();
-        widget3dPoseView->resetImage();
+        //widget3dPoseView->resetImage();
+        widgetPoseRender->clearKeypoints();
     }
 }
 
@@ -220,7 +239,13 @@ void MainWindow::set3dPoseImage(const cv::Mat& image)
     //printf("3D pose image\n");
     QImage qimage((uchar*)image.data, image.cols, image.rows, image.step, QImage::Format_RGB888);
     QPixmap pixmap = QPixmap::fromImage(qimage.rgbSwapped());// 将 OpenCV 的 BGR 格式转换为 QImage 的 RGB 格式
-    widget3dPoseView->setImage(pixmap);
+    //widget3dPoseView->setImage(pixmap);
+}
+
+void MainWindow::setKeypoints(const op::Array<float>& poseKeypoints3D, const op::Array<float>& faceKeypoints3D,
+    const op::Array<float>& leftHandKeypoints3D, const op::Array<float>& rightHandKeypoints3D)
+{
+    widgetPoseRender->setKeypoints(poseKeypoints3D, faceKeypoints3D, leftHandKeypoints3D, rightHandKeypoints3D);
 }
 
 void MainWindow::showLayoutVideoWidget()
@@ -355,12 +380,12 @@ void MainWindow::createActions()
 
     QMenu* executeOptionMenu = operMenu->addMenu(tr("运行选项"));
 
-    QAction* optionSaveOutputAct = new QAction(tr("保存输出数据"), this);
-    optionSaveOutputAct->setCheckable(true);
-    connect(optionSaveOutputAct, &QAction::toggled, this, &MainWindow::exeOptionSaveOutput);
-    executeOptionMenu->addAction(optionSaveOutputAct);
+    //QAction* optionSaveOutputAct = new QAction(tr("保存输出数据"), this);
+    //optionSaveOutputAct->setCheckable(true);
+    //connect(optionSaveOutputAct, &QAction::toggled, this, &MainWindow::exeOptionSaveOutput);
+    //executeOptionMenu->addAction(optionSaveOutputAct);
 
-    executeOptionMenu->addSeparator();
+    //executeOptionMenu->addSeparator();
 
     QAction* optionAlgorithmNo = new QAction(tr("不启用算法"), this);
     optionAlgorithmNo->setCheckable(true);
@@ -432,8 +457,10 @@ void MainWindow::createDockWindows()
 
     dock = new QDockWidget(tr("3D姿态视图"), this);
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
-    widget3dPoseView = new VideoItemWidget(dock);
-    dock->setWidget(widget3dPoseView);
+    //widget3dPoseView = new VideoItemWidget(dock);
+    //dock->setWidget(widget3dPoseView);
+    widgetPoseRender = new PoseRenderWidget(dock);
+    dock->setWidget(widgetPoseRender);
     addDockWidget(Qt::RightDockWidgetArea, dock);
     viewMenu->addAction(dock->toggleViewAction());
 

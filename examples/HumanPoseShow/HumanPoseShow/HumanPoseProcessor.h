@@ -1,6 +1,7 @@
 #ifndef HUMAN_POSE_PROCESSOR_H_
 #define HUMAN_POSE_PROCESSOR_H_
 
+#include <openpose/utilities/keypoint.hpp>
 #include <opencv2/opencv.hpp>
 #include <memory>
 
@@ -22,15 +23,13 @@ struct HumanPoseParams
             InputTypeNum
         };
         InputType inputType = MindCamera;
-        std::string videoPath = "datas/pose_tests/panoptic/dance2a/video.mp4";
-        int viewNumber = 4;
+        std::string videoPath = "";
+        int viewNumber = -1;
         int cameraIndex = -1;
-        int cameraTriggerMode = 0;
+        int cameraTriggerMode = 1;
         double captureFps = -1.;
         std::string cameraResolution = "1224x1024";
-        std::string cameraParamPath = "datas/pose_tests/mind_camera/test04/cameras/";
-        //std::string cameraResolution = "-1x-1";
-        //std::string cameraParamPath = "datas/pose_tests/panoptic/dance2a/cameras/";
+        std::string cameraParamPath = "calibration";
         bool frameUndistort = false;
     };
 
@@ -70,6 +69,8 @@ class HumanPoseProcessorCallback
 public:
     virtual void set2dPoseImage(int index, const cv::Mat& image) = 0;
     virtual void set3dPoseImage(const cv::Mat& image) = 0;
+    virtual void setKeypoints(const op::Array<float>& poseKeypoints3D, const op::Array<float>& faceKeypoints3D,
+        const op::Array<float>& leftHandKeypoints3D, const op::Array<float>& rightHandKeypoints3D) = 0;
 };
 
 class HumanPoseProcessor
@@ -83,13 +84,11 @@ public:
     virtual void stop() = 0;
     virtual bool isRunning() = 0;
 
-    virtual bool queryCameraList(const HumanPoseParams& params, std::string& cameraType,
-                                 std::vector<std::string>& cameraNames) = 0;
-
 private:
-    //HumanPoseParams params_;
 };
 
+bool queryCameraList(const HumanPoseParams& params, std::string& cameraType,
+    std::vector<std::string>& cameraNames);
 bool calibrateCameraIntrinsics(const std::vector<std::string>& cameraNames,
     const std::string& calibrateDir, const std::string& gridLayout, float gridSize);
 bool calibrateCameraExtrinsics(const std::vector<std::string>& cameraNames,

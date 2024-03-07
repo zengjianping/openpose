@@ -18,9 +18,6 @@ public:
     void stop() override;
     bool isRunning() override;
 
-    bool queryCameraList(const HumanPoseParams& params, std::string& cameraType,
-                         std::vector<std::string>& cameraNames) override;
-
 private:
     HumanPoseProcessorCallback* callback_;
     std::shared_ptr<op::Wrapper> opWrapper_;
@@ -120,8 +117,8 @@ bool enumerateMindCamera(std::vector<std::string>& cameraNames)
     return false;
 }
 
-bool HumanPoseProcessorOP::queryCameraList(const HumanPoseParams& params, std::string& cameraType,
-                                           std::vector<std::string>& cameraNames)
+bool queryCameraList(const HumanPoseParams& params, std::string& cameraType,
+    std::vector<std::string>& cameraNames)
 {
     if (params.inputParams.inputType == HumanPoseParams::InputParams::MindCamera)
     {
@@ -181,7 +178,7 @@ bool calibrateCameraExtrinsics(const std::vector<std::string>& cameraNames,
         {
             // Run calibration
             op::opLog("Running calibration (extrinsic parameters)...", op::Priority::High);
-            op::estimateAndSaveExtrinsics(calibrateDir, calibrationImageDir,
+            op::estimateAndSaveExtrinsics(op::formatAsDirectory(calibrateDir), calibrationImageDir,
                 gridInnerCorners, gridSqureSizeMm, i, i+1, true, i > 0);
             op::opLog("Extrinsic calibration completed!", op::Priority::High);
         }
@@ -203,8 +200,8 @@ public:
     {
         callback_ = callback;
         stereoPose_ = stereoPose;
-        if (stereoPose)
-            stereoPoseRender_.reset(new op::StereoPoseRender(true));
+        //if (stereoPose)
+        //    stereoPoseRender_.reset(new op::StereoPoseRender(true));
         displayImage_ = displayImage;
         printInfo_ = printInfo;
     }
@@ -246,6 +243,13 @@ public:
                     // Profiling speed
                     op::Profiler::timerEnd(profilerKey);
                     op::Profiler::printAveragedTimeMsOnIterationX(profilerKey, __LINE__, __FUNCTION__, __FILE__);
+                }
+                else if (stereoPose_)
+                {
+                    auto& tDatumPtr = (*datumsPtr)[0];
+                    callback_->setKeypoints(
+                        tDatumPtr->poseKeypoints3D, tDatumPtr->faceKeypoints3D, tDatumPtr->handKeypoints3D[0],
+                        tDatumPtr->handKeypoints3D[1]);
                 }
 
                 for (size_t i = 0; i < datumsPtr->size(); i++)
@@ -644,12 +648,20 @@ bool HumanPoseParams::loadFromFile(const std::string& paramFile)
     algorithmParams.batchProcess = algorithmValue["batchProcess"].asBool();
     algorithmParams.realTimeProcess = algorithmValue["realTimeProcess"].asBool();
 
+    Json::Value& outputValue = root["outputParams"];
+    outputParams.saveImage = outputValue["saveImage"].asBool();
+    outputParams.imageSavePath = outputValue["imageSavePath"].asString();
+    outputParams.saveVideo = outputValue["saveVideo"].asBool();
+    outputParams.videoSavePath = outputValue["videoSavePath"].asString();
+    outputParams.saveVideo3d = outputValue["saveVideo3d"].asBool();
+    outputParams.video3dSavePath = outputValue["video3dSavePath"].asString();
+
     return true;
 }
 
 bool HumanPoseParams::saveToFile(const std::string& paramFile)
 {
-    Json::Value root, inputValue, algorithmValue;
+    Json::Value root, inputValue, outputValue, algorithmValue;
 
     inputValue["inputType"] = Json::Value(int(inputParams.inputType));
     inputValue["videoPath"] = Json::Value(inputParams.videoPath);
@@ -667,7 +679,15 @@ bool HumanPoseParams::saveToFile(const std::string& paramFile)
     algorithmValue["batchProcess"] = Json::Value(algorithmParams.batchProcess);
     algorithmValue["realTimeProcess"] = Json::Value(algorithmParams.realTimeProcess);
 
+    outputValue["saveImage"] = Json::Value(outputParams.saveImage);
+    outputValue["imageSavePath"] = Json::Value(outputParams.imageSavePath);
+    outputValue["saveVideo"] = Json::Value(outputParams.saveVideo);
+    outputValue["videoSavePath"] = Json::Value(outputParams.videoSavePath);
+    outputValue["saveVideo3d"] = Json::Value(outputParams.saveVideo3d);
+    outputValue["video3dSavePath"] = Json::Value(outputParams.video3dSavePath);
+
     root["inputParams"] = inputValue;
+    root["outputParams"] = outputValue;
     root["algorithmParams"] = algorithmValue;
 
 	Json::StreamWriterBuilder builder;
