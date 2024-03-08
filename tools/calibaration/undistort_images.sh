@@ -1,6 +1,6 @@
 #!/bin/bash
 
-data_dir="datas/calibration/test02"
+data_dir="datas/pose_tests/mind_camera/test03/cameras"
 serial_no="camera02"
 grid_number="8x6"
 

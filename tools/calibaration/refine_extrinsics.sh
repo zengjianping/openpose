@@ -1,6 +1,6 @@
 #!/bin/bash
 
-data_dir="datas/calibration/test04"
+data_dir="datas/pose_tests/mind_camera/test03/cameras"
 grid_number="11x8"
 
 ./build/examples/calibration/calibration.bin \

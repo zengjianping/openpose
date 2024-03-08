@@ -74,6 +74,7 @@ int MainWindow::newTaskHelper()
     if (QDialog::Accepted != dialog.exec())
         return 2;
 
+    auto algoMode = humanPoseParams.algorithmParams.algoType;
     QString newTaskName, newTaskFile, calibrationDir;
     dialog.getCurrentTaskInfo(newTaskName, newTaskFile, calibrationDir);
     HumanPoseParams params = HumanPoseParams();
@@ -81,6 +82,7 @@ int MainWindow::newTaskHelper()
     std::string paramMd5;
     if (!params.saveToFile(newTaskFile.toStdString(), paramMd5))
         return 1;
+    params.algorithmParams.algoType = algoMode;
     humanPoseParams = params;
     paramMd5String = paramMd5;
 
@@ -109,12 +111,14 @@ int MainWindow::openTaskHelper()
     if (QDialog::Accepted != dialog.exec())
         return 2;
 
+    auto algoMode = humanPoseParams.algorithmParams.algoType;
     QString newTaskName, newTaskFile, calibrationDir;
     dialog.getCurrentTaskInfo(newTaskName, newTaskFile, calibrationDir);
     HumanPoseParams params = HumanPoseParams();
     std::string paramMd5;
     if (!params.loadFromFile(newTaskFile.toStdString(), paramMd5))
         return 1;
+    params.algorithmParams.algoType = algoMode;
     humanPoseParams = params;
     paramMd5String = paramMd5;
 

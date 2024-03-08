@@ -100,7 +100,7 @@ void DialogTaskList::on_listTaskNames_itemSelectionChanged()
     {
         QString selTaskName = taskNames[currSelIndex];
         static QStringList reservedTaskNames = {"default", "VideoFile01",
-                            "VideoDir01", "MindCamera01", "HikCamera01"};
+                            "VideoDir01", "MindCamera01", "HikvCamera01"};
         ui->buttonTaskDelete->setEnabled(!reservedTaskNames.contains(selTaskName));
     }
 }
