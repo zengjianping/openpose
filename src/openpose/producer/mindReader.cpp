@@ -143,7 +143,8 @@ namespace op
                     + std::to_string(status) + ".";
                 error(message, __LINE__, __FUNCTION__, __FILE__);
             }
-            CameraSetTriggerCount(cameraHandle, 1);
+            if (triggerMode > 0)
+                CameraSetTriggerCount(cameraHandle, 1);
             opLog("Trigger mode is set to " + std::to_string(triggerMode) + ".", Priority::High);
         }
         catch (const std::exception& e)
@@ -418,7 +419,7 @@ namespace op
                 // Camera exposure
                 bool autoExposure = true;
                 CameraSetAeState(cameraHandle, autoExposure);
-                CameraSetAeTarget(cameraCount, 80);
+                CameraSetAeTarget(cameraHandle, 80);
                 CameraSetAnalogGain(cameraHandle, 80);
                 CameraSetExposureTime(cameraHandle, 20 * 1000);
                 

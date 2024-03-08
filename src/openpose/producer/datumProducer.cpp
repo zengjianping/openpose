@@ -23,6 +23,7 @@ namespace op
             // Set frame first and step
             if (producerSharedPtr->getType() != ProducerType::FlirCamera
                 && producerSharedPtr->getType() != ProducerType::MindCamera
+                && producerSharedPtr->getType() != ProducerType::HikvCamera
                 && producerSharedPtr->getType() != ProducerType::IPCamera
                 && producerSharedPtr->getType() != ProducerType::Webcam)
             {

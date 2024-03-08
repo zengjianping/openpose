@@ -31,6 +31,7 @@ namespace op
         /** Stereo FLIR (Point-Grey) camera reader. Based on Spinnaker SDK. */
         FlirCamera,
         MindCamera,
+        HikvCamera,
         /** An image directory reader. It is able to read images on a folder with a interface similar to the OpenCV
          * cv::VideoCapture.
          */

@@ -961,8 +961,10 @@ endif (WITH_FLIR_CAMERA)
 if (UNIX OR APPLE)
   set(OpenPose_3rdparty_libraries ${OpenPose_3rdparty_libraries} pthread)
 endif (UNIX OR APPLE)
-set(OpenPose_3rdparty_libraries ${OpenPose_3rdparty_libraries} MVSDK)
 
+include_directories("/opt/MVS/include")
+link_directories("/opt/MVS/lib/64")
+set(OpenPose_3rdparty_libraries ${OpenPose_3rdparty_libraries} MVSDK MvCameraControl)
 
 ### ADD SUBDIRECTORIES
 if (Caffe_FOUND)

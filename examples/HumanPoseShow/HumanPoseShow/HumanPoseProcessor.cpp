@@ -4,6 +4,7 @@
 #include <openpose/utilities/profiler.hpp>
 #include <json/json.h>
 #include "CameraApi.h"
+#include "MvCameraControl.h"
 
 
 class HumanPoseProcessorOP : public HumanPoseProcessor
@@ -117,6 +118,28 @@ bool enumerateMindCamera(std::vector<std::string>& cameraNames)
     return false;
 }
 
+bool enumerateHikvCamera(std::vector<std::string>& cameraNames)
+{
+    MV_CC_DEVICE_INFO_LIST stDeviceList;
+    memset(&stDeviceList, 0, sizeof(MV_CC_DEVICE_INFO_LIST));
+    int nRet = MV_CC_EnumDevices(MV_USB_DEVICE, &stDeviceList);
+    int cameraCount = stDeviceList.nDeviceNum;
+
+    if (MV_OK == nRet || cameraCount > 0)
+    {
+        MV_CC_DEVICE_INFO* pDeviceInfo[MV_MAX_DEVICE_NUM];
+        for (int i = 0; i < cameraCount; i++)
+            pDeviceInfo[i] = stDeviceList.pDeviceInfo[i];
+        std::sort(&pDeviceInfo[0], &pDeviceInfo[cameraCount], [](MV_CC_DEVICE_INFO* a, MV_CC_DEVICE_INFO* b)
+                {return strcmp((char*)&a->SpecialInfo.stUsb3VInfo.chSerialNumber[0],
+                                (char*)&b->SpecialInfo.stUsb3VInfo.chSerialNumber[0]) <= 0;});
+        for (int i = 0; i < cameraCount; i++)
+            cameraNames.push_back((char*)&pDeviceInfo[i]->SpecialInfo.stUsb3VInfo.chSerialNumber[0]);
+        return true;
+    }
+    return false;
+}
+
 bool queryCameraList(const HumanPoseParams& params, std::string& cameraType,
     std::vector<std::string>& cameraNames)
 {
@@ -127,6 +150,17 @@ bool queryCameraList(const HumanPoseParams& params, std::string& cameraType,
             if (cameraNames.size() > 0)
             {
                 cameraType = "迈德威视相机";
+                return true;
+            }
+        }
+    }
+    else if (params.inputParams.inputType == HumanPoseParams::InputParams::HikvCamera)
+    {
+        if (enumerateHikvCamera(cameraNames))
+        {
+            if (cameraNames.size() > 0)
+            {
+                cameraType = "海康威视相机";
                 return true;
             }
         }
@@ -370,6 +404,7 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
         int camera_index = -1;
         bool flir_camera = false;
         bool mind_camera = false;
+        bool hikv_camera = false;
         std::string camera_resolution = "-1x-1";
         std::string output_resolution = "-1x-1";
         std::string net_resolution = "-1x368";
@@ -461,6 +496,9 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
         case HumanPoseParams::InputParams::MindCamera:
             mind_camera = true;
             break;
+        case HumanPoseParams::InputParams::HikvCamera:
+            hikv_camera = true;
+            break;
         case HumanPoseParams::InputParams::VideoFile:
         case HumanPoseParams::InputParams::VideoDirectory:
             video_path = params.inputParams.videoPath;
@@ -515,7 +553,7 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
         op::String producerString;
         std::tie(producerType, producerString) = op::flagsToProducer(
             op::String(image_dir), op::String(video_path), op::String(ip_camera), camera_index,
-            flir_camera, camera_index, mind_camera, camera_index);
+            flir_camera, camera_index, mind_camera, camera_index, hikv_camera, camera_index);
         // cameraSize
         const auto cameraSize = op::flagsToPoint(op::String(camera_resolution), "-1x-1");
         // outputSize

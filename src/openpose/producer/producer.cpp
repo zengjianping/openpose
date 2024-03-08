@@ -40,7 +40,7 @@ namespace op
             mProperties[(unsigned int)ProducerProperty::NumberViews] = numberViews;
             auto& mNumberViews = mProperties[(unsigned int)ProducerProperty::NumberViews];
             // Camera (distortion, intrinsic, and extrinsic) parameters
-            if (mType != ProducerType::FlirCamera && mType != ProducerType::MindCamera)
+            if (mType != ProducerType::FlirCamera && mType != ProducerType::MindCamera&& mType != ProducerType::HikvCamera)
             {
                 // Undistort image?
                 mCameraParameterReader.setUndistortImage(undistortImage);
@@ -326,6 +326,7 @@ namespace op
                 if (mNumberEmptyFrames > 2
                     || (mType != ProducerType::FlirCamera && mType != ProducerType::IPCamera
                         && mType != ProducerType::Webcam && mType != ProducerType::MindCamera
+                        && mType != ProducerType::HikvCamera
                         && get(CV_CAP_PROP_POS_FRAMES) >= get(CV_CAP_PROP_FRAME_COUNT)))
                 {
                     // Repeat video
@@ -436,6 +437,10 @@ namespace op
             // MindVision camera
             else if (producerType == ProducerType::MindCamera)
                 return std::make_shared<MindReader>(cameraParameterPath, cameraResolution, undistortImage,
+                    std::stoi(producerString), cameraTriggerMode, captureFps);
+            // HikVision camera
+            else if (producerType == ProducerType::HikvCamera)
+                return std::make_shared<HikvReader>(cameraParameterPath, cameraResolution, undistortImage,
                     std::stoi(producerString), cameraTriggerMode, captureFps);
             // Webcam
             else if (producerType == ProducerType::Webcam)

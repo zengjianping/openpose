@@ -19,7 +19,7 @@ struct HumanPoseParams
             VideoDirectory,
             WebCamera,
             MindCamera,
-            HikCamera,
+            HikvCamera,
             InputTypeNum
         };
         InputType inputType = MindCamera;

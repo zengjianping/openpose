@@ -6,6 +6,7 @@
 #include <openpose/producer/enumClasses.hpp>
 #include <openpose/producer/flirReader.hpp>
 #include <openpose/producer/mindReader.hpp>
+#include <openpose/producer/hikvReader.hpp>
 #include <openpose/producer/imageDirectoryReader.hpp>
 #include <openpose/producer/ipCameraReader.hpp>
 #include <openpose/producer/producer.hpp>

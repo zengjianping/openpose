@@ -48,6 +48,10 @@ DEFINE_bool(mind_camera,                false,          "Whether to use MindVisi
 DEFINE_int32(mind_camera_index,         -1,             "Select -1 (default) to run on all detected mind cameras at once. Otherwise, select the mind"
                                                         " camera index to run, where 0 corresponds to the detected mind camera with the lowest"
                                                         " serial number, and `n` to the `n`-th lowest serial number camera.");
+DEFINE_bool(hikv_camera,                false,          "Whether to use HIkVision stereo camera.");
+DEFINE_int32(hikv_camera_index,         -1,             "Select -1 (default) to run on all detected hikv cameras at once. Otherwise, select the hikv"
+                                                        " camera index to run, where 0 corresponds to the detected hikv camera with the lowest"
+                                                        " serial number, and `n` to the `n`-th lowest serial number camera.");
 DEFINE_string(ip_camera,                "",             "String with the IP camera URL. It supports protocols like RTSP and HTTP.");
 DEFINE_uint64(frame_first,              0,              "Start on desired frame number. Indexes are 0-based, i.e., the first frame has index 0.");
 DEFINE_uint64(frame_step,               1,              "Step or gap between processed frames. E.g., `--frame_step 5` would read and process frames"

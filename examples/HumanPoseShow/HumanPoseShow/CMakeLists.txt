@@ -23,10 +23,12 @@ pkg_check_modules(JSONCPP jsoncpp)
 include_directories(
     ${OpenPose_INCLUDE_DIRS}
     ${JSONCPP_INCLUDE_DIRS}
+    "/opt/MVS/include"
 )
 
 link_directories(
     ${JSONCPP_LIBRARY_DIRS}
+    "/opt/MVS/lib/64"
 )
 
 set(TS_FILES HumanPoseShow_zh_CN.ts)
