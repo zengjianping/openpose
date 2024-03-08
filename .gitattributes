@@ -1,5 +1,1 @@
 datas/pose_tasks/VideoFile01/video.mp4 filter=lfs diff=lfs merge=lfs -text
-datas/pose_tasks/VideoDir01/videos/hd_00_00_60.mp4 filter=lfs diff=lfs merge=lfs -text
-datas/pose_tasks/VideoDir01/videos/hd_00_01_60.mp4 filter=lfs diff=lfs merge=lfs -text
-datas/pose_tasks/VideoDir01/videos/hd_00_02_60.mp4 filter=lfs diff=lfs merge=lfs -text
-datas/pose_tasks/VideoDir01/videos/hd_00_03_60.mp4 filter=lfs diff=lfs merge=lfs -text
