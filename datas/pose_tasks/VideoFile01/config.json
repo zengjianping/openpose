@@ -1,0 +1,31 @@
+{
+	"algorithmParams" : 
+	{
+		"batchProcess" : false,
+		"minViews3d" : 2,
+		"modelResolution" : "-1x256",
+		"outputResolution" : "-1x-1",
+		"realTimeProcess" : false
+	},
+	"inputParams" : 
+	{
+		"cameraIndex" : -1,
+		"cameraParamPath" : "datas/pose_tasks/VideoFile01/calibration",
+		"cameraResolution" : "-1x-1",
+		"cameraTriggerMode" : 0,
+		"captureFps" : -1,
+		"frameUndistort" : false,
+		"inputType" : 0,
+		"videoPath" : "datas/pose_tasks/VideoFile01/video.mp4",
+		"viewNumber" : 4
+	},
+	"outputParams" : 
+	{
+		"imageSavePath" : "",
+		"saveImage" : false,
+		"saveVideo" : false,
+		"saveVideo3d" : false,
+		"video3dSavePath" : "",
+		"videoSavePath" : ""
+	}
+}

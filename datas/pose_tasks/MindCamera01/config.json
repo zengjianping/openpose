@@ -1,0 +1,31 @@
+{
+	"algorithmParams" : 
+	{
+		"batchProcess" : false,
+		"minViews3d" : 2,
+		"modelResolution" : "-1x256",
+		"outputResolution" : "-1x-1",
+		"realTimeProcess" : false
+	},
+	"inputParams" : 
+	{
+		"cameraIndex" : -1,
+		"cameraParamPath" : "datas/pose_tasks/MindCamera01/calibration",
+		"cameraResolution" : "1224x1024",
+		"cameraTriggerMode" : 1,
+		"captureFps" : -1,
+		"frameUndistort" : true,
+		"inputType" : 3,
+		"videoPath" : "",
+		"viewNumber" : -1
+	},
+	"outputParams" : 
+	{
+		"imageSavePath" : "",
+		"saveImage" : false,
+		"saveVideo" : false,
+		"saveVideo3d" : false,
+		"video3dSavePath" : "",
+		"videoSavePath" : ""
+	}
+}
