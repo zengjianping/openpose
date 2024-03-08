@@ -72,6 +72,7 @@ add_executable(${EXE_NAME}
 target_link_libraries(${EXE_NAME}
   Qt5::Widgets
   openpose
+  crypto++
   ${JSONCPP_LIBRARIES}
   ${examples_3rdparty_libraries}
 )

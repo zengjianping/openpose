@@ -106,7 +106,7 @@ endif()
 
 target_link_directories(HumanPoseShow PRIVATE "../../../install/lib/")
 target_link_libraries(HumanPoseShow PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
-    ${OpenPose_LIBS} caffe Eigen3::Eigen MVSDK ${JSONCPP_LIBRARIES})
+    ${OpenPose_LIBS} caffe Eigen3::Eigen MVSDK ${JSONCPP_LIBRARIES} crypto++)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

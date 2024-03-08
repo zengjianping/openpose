@@ -36,6 +36,9 @@ public:
     void setKeypoints(const op::Array<float>& poseKeypoints3D, const op::Array<float>& faceKeypoints3D,
         const op::Array<float>& leftHandKeypoints3D, const op::Array<float>& rightHandKeypoints3D) override;
 
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
 private slots:
     void newTask();
     void openTask();
@@ -62,6 +65,7 @@ private:
     int newTaskHelper();
     int openTaskHelper();
     int saveTaskHelper();
+    void checkSaveTask();
 
     void createActions();
     void createStatusBar();
@@ -87,6 +91,7 @@ private:
     QAction* layoutPageAct;
 
     QString taskName, taskFile;
+    std::string paramMd5String;
     HumanPoseParams humanPoseParams;
     std::shared_ptr<HumanPoseProcessor> humanPoseProcessor;
 };

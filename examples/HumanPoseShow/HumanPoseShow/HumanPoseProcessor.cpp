@@ -5,6 +5,11 @@
 #include <json/json.h>
 #include "CameraApi.h"
 #include "MvCameraControl.h"
+#include <iostream>
+#include <cryptopp/md5.h>
+#include <cryptopp/filters.h>
+#include <cryptopp/hex.h>
+ 
 
 
 class HumanPoseProcessorOP : public HumanPoseProcessor
@@ -653,16 +658,40 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
     }
 }
 
-bool HumanPoseParams::loadFromFile(const std::string& paramFile)
+std::string getMD5(const std::string& input) {
+    CryptoPP::MD5 md5;
+    //byte digest[CryptoPP::MD5::DIGESTSIZE];
+    std::string digest;
+    CryptoPP::StringSource(
+        input, true, 
+        new CryptoPP::HashFilter(md5, 
+            new CryptoPP::HexEncoder(
+                new CryptoPP::StringSink(digest)
+            )
+        ) // HexEncoder
+    ); // StringSource
+ 
+    return digest;
+}
+
+bool HumanPoseParams::loadFromFile(const std::string& paramFile, std::string& md5)
 {
     Json::Value root;
     std::ifstream ifs;
     ifs.open(paramFile);
+    if (!ifs.is_open())
+        return false;
+
+    std::string jsonString((std::istreambuf_iterator<char>(ifs)),
+                            (std::istreambuf_iterator<char>()));
+    //std::cout << "Load json: " << jsonString << std::endl;
+    md5 = getMD5(jsonString);
+    std::istringstream iss(jsonString);
 
     Json::CharReaderBuilder builder;
     builder["collectComments"] = true;
     JSONCPP_STRING errs;
-    if (!Json::parseFromStream(builder, ifs, &root, &errs)) {
+    if (!Json::parseFromStream(builder, iss, &root, &errs)) {
         std::cout << errs << std::endl;
         return false;
     }
@@ -697,7 +726,7 @@ bool HumanPoseParams::loadFromFile(const std::string& paramFile)
     return true;
 }
 
-bool HumanPoseParams::saveToFile(const std::string& paramFile)
+bool HumanPoseParams::saveToFile(const std::string& paramFile, std::string& md5)
 {
     Json::Value root, inputValue, outputValue, algorithmValue;
 
@@ -738,13 +767,22 @@ bool HumanPoseParams::saveToFile(const std::string& paramFile)
  
 	builder.settings_ = def; //Config emitUTF8
 	const std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
- 
-    std::ofstream ofs;
-    ofs.open(paramFile);
-    if (!ofs.is_open())
-        return false;
-	writer->write(root, &ofs);
-    ofs.close();
+
+    std::ostringstream oss;
+ 	writer->write(root, &oss);
+    std::string jsonString = oss.str();
+    //std::cout << "Save json: " << jsonString << std::endl;
+    md5 = getMD5(jsonString);
+
+    if (!paramFile.empty())
+    {
+        std::ofstream ofs;
+        ofs.open(paramFile);
+        if (!ofs.is_open())
+            return false;
+        ofs << jsonString;
+        ofs.close();
+    }
 
     return true;
 }

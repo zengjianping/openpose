@@ -38,6 +38,25 @@ bool MainWindow::initialize()
     return res == 0;
 }
 
+void MainWindow::checkSaveTask()
+{
+    if (paramMd5String.empty())
+        return;
+    std::string paramMd5;
+    humanPoseParams.saveToFile(std::string(), paramMd5);
+    if (paramMd5String != paramMd5)
+    {
+        if(QMessageBox::Yes == QMessageBox::question(this, tr("提示"), tr("当前任务尚未保存，是否保存？")))
+            humanPoseParams.saveToFile(taskFile.toStdString(), paramMd5);
+    }
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    checkSaveTask();
+    event->accept();
+}
+
 void MainWindow::newTask()
 {
     int res = newTaskHelper();
@@ -49,6 +68,8 @@ void MainWindow::newTask()
 
 int MainWindow::newTaskHelper()
 {
+    checkSaveTask();
+
     DialogTaskList dialog(this, true);
     if (QDialog::Accepted != dialog.exec())
         return 2;
@@ -57,9 +78,11 @@ int MainWindow::newTaskHelper()
     dialog.getCurrentTaskInfo(newTaskName, newTaskFile, calibrationDir);
     HumanPoseParams params = HumanPoseParams();
     params.inputParams.cameraParamPath = calibrationDir.toStdString();
-    if (!params.saveToFile(newTaskFile.toStdString()))
+    std::string paramMd5;
+    if (!params.saveToFile(newTaskFile.toStdString(), paramMd5))
         return 1;
     humanPoseParams = params;
+    paramMd5String = paramMd5;
 
     taskName = newTaskName;
     taskFile = newTaskFile;
@@ -79,6 +102,8 @@ void MainWindow::openTask()
 
 int MainWindow::openTaskHelper()
 {
+    checkSaveTask();
+
     //QString fileName = QFileDialog::getOpenFileName(this, tr("选择文件"), ".", "Json Files (*.json)");
     DialogTaskList dialog(this, false);
     if (QDialog::Accepted != dialog.exec())
@@ -86,8 +111,12 @@ int MainWindow::openTaskHelper()
 
     QString newTaskName, newTaskFile, calibrationDir;
     dialog.getCurrentTaskInfo(newTaskName, newTaskFile, calibrationDir);
-    if (!humanPoseParams.loadFromFile(newTaskFile.toStdString()))
+    HumanPoseParams params = HumanPoseParams();
+    std::string paramMd5;
+    if (!params.loadFromFile(newTaskFile.toStdString(), paramMd5))
         return 1;
+    humanPoseParams = params;
+    paramMd5String = paramMd5;
 
     taskName = newTaskName;
     taskFile = newTaskFile;
@@ -100,16 +129,18 @@ void MainWindow::saveTask()
 {
     int res = saveTaskHelper();
     if (res == 0)
-        QMessageBox::information(this, tr("提示"), tr("保存任务（%1）成功！").arg(taskName), QMessageBox::Ok);
+        QMessageBox::information(this, tr("提示"), tr("保存任务（%1)成功！").arg(taskName), QMessageBox::Ok);
     else if (res == 1)
-        QMessageBox::information(this, tr("提示"), tr("保存任务（%1）失败！").arg(taskName), QMessageBox::Ok);
+        QMessageBox::information(this, tr("提示"), tr("保存任务（%1)失败！").arg(taskName), QMessageBox::Ok);
 }
 
 int MainWindow::saveTaskHelper()
 {
     //QString fileName = QFileDialog::getSaveFileName(this, tr("选择文件"), ".", "Json Files (*.json)");
-    if (!humanPoseParams.saveToFile(taskFile.toStdString()))
+    std::string paramMd5;
+    if (!humanPoseParams.saveToFile(taskFile.toStdString(), paramMd5))
         return 1;
+    paramMd5String = paramMd5;
     return 0;
 }
 
@@ -472,3 +503,4 @@ void MainWindow::createDockWindows()
     addDockWidget(Qt::RightDockWidgetArea, dock);
     viewMenu->addAction(dock->toggleViewAction());
 }
+

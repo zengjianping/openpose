@@ -8,8 +8,8 @@
 
 struct HumanPoseParams
 {
-    bool loadFromFile(const std::string& paramFile);
-    bool saveToFile(const std::string& paramFile);
+    bool loadFromFile(const std::string& paramFile, std::string& md5);
+    bool saveToFile(const std::string& paramFile, std::string& md5);
 
     struct InputParams
     {
