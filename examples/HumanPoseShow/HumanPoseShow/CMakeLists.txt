@@ -9,9 +9,12 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}:/usr/lib/x86_64-linux-gnu/cmake")
+set(OpenPoseRootDir "/home/zengjianping/Programs/HumanPoseShow")
+set(OpenPose_DIR "${OpenPoseRootDir}/lib/OpenPose/")
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
-set(OpenPose_DIR "/opt/openpose/lib/OpenPose/")
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(OpenPose REQUIRED)
@@ -104,7 +107,7 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_directories(HumanPoseShow PRIVATE "/opt/openpose/lib/")
+target_link_directories(HumanPoseShow PRIVATE "${OpenPoseRootDir}/lib/")
 target_link_libraries(HumanPoseShow PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
     ${OpenPose_LIBS} caffe Eigen3::Eigen MVSDK ${JSONCPP_LIBRARIES} crypto++)
 

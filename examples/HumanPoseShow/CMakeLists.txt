@@ -87,7 +87,11 @@ install(
   DIRECTORY ${PROJECT_SOURCE_DIR}/datas/pose_tasks
   DESTINATION datas/)
 
-install(
+  install(
+    DIRECTORY ${PROJECT_SOURCE_DIR}/models/pose/body_25
+    DESTINATION models/pose/)
+  
+  install(
   PROGRAMS ${PROJECT_SOURCE_DIR}/scripts/human_pose_show.sh
   DESTINATION scripts/
 )
