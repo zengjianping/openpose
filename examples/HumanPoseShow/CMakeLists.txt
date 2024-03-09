@@ -7,7 +7,8 @@ if(CMAKE_VERSION VERSION_LESS "3.7.0")
     set(CMAKE_INCLUDE_CURRENT_DIR ON)
 endif()
 
-set(Qt5_DIR "/home/zengjianping/Qt/5.15.1/gcc_64/lib/cmake/Qt5/")
+#set(Qt5_DIR "/home/zengjianping/Qt/5.15.1/gcc_64/lib/cmake/Qt5/")
+#set(Qt5_DIR "/usr/lib/x86_64-linux-gnu/cmake/Qt5/")
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
 find_package(PkgConfig REQUIRED)
