@@ -22,7 +22,7 @@ link_directories(
     ${JSONCPP_LIBRARY_DIRS}
 )
 
-set(EXE_NAME "HumanPoseShow")
+set(EXE_NAME "HumanPoseShow.bin")
 message(STATUS "Adding Example ${EXE_NAME}")
 
 add_executable(${EXE_NAME}
@@ -75,5 +75,19 @@ target_link_libraries(${EXE_NAME}
   crypto++
   ${JSONCPP_LIBRARIES}
   ${examples_3rdparty_libraries}
+)
+
+install(TARGETS ${EXE_NAME}
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
+install(
+  DIRECTORY ${PROJECT_SOURCE_DIR}/datas/pose_tasks
+  DESTINATION datas/)
+
+install(
+  PROGRAMS ${PROJECT_SOURCE_DIR}/scripts/human_pose_show.sh
+  DESTINATION scripts/
 )
 

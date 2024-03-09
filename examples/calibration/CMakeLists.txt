@@ -24,4 +24,10 @@ foreach(EXAMPLE_FILE ${EXAMPLE_FILES})
     set_property(TARGET ${EXE_NAME} PROPERTY RUNTIME_OUTPUT_DIRECTORY_DEBUG ${PROJECT_BINARY_DIR}/$(Platform)/$(Configuration))
   endif (WIN32)
 
+  install(TARGETS ${EXE_NAME}
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+  )
+
 endforeach()
