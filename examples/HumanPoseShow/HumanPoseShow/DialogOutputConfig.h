@@ -29,7 +29,9 @@ private slots:
     void on_buttonImageDir_clicked();
     void on_buttonVideoPath_clicked();
     void on_button3dVideoPath_clicked();
+    void on_buttonPosePath_clicked();
     void on_buttonBox_accepted();
+
 
 private:
     Ui::DialogOutputConfig *ui;

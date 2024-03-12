@@ -74,11 +74,11 @@ private:
     bool gBButton1Down = false;
     double gXClick = 0.f;
     double gYClick = 0.f;
-    double gGViewDistance = -250.f; // -82.3994f; //-45;
+    double gGViewDistance = -100.f; // -82.3994f; //-45;
     double gMouseXRotateDeg = 180.f; // -63.2f; //0;
     double gMouseYRotateDeg = -5.f; // 7.f; //60;
-    double gMouseXPan = -70.f; // 0;
-    double gMouseYPan = -70.f; // 0;
+    double gMouseXPan = -100.f; // 0;
+    double gMouseYPan = -40.f; // 0;
     double gMouseZPan = 0.f;
     double gScaleForMouseMotion = 0.1f;
     double gAspectRatio = 1.0;

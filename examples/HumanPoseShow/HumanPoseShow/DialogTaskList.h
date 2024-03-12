@@ -16,7 +16,7 @@ public:
     ~DialogTaskList();
 
 public:
-    void getCurrentTaskInfo(QString& taskName, QString& taskFile, QString& calibrationDir);
+    void getCurrentTaskInfo(QString& taskName, QString& taskFile, QString& taskDir);
 
 private slots:
     void on_buttonBox_accepted();

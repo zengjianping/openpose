@@ -21,11 +21,13 @@
 	},
 	"outputParams" : 
 	{
-		"imageSavePath" : "",
+		"imageSavePath" : "datas/pose_tasks/HikvCamera01/outputs/images",
+		"poseSavePath" : "datas/pose_tasks/HikvCamera01/outputs/poses",
 		"saveImage" : false,
+		"savePose" : false,
 		"saveVideo" : false,
 		"saveVideo3d" : false,
-		"video3dSavePath" : "",
-		"videoSavePath" : ""
+		"video3dSavePath" : "datas/pose_tasks/HikvCamera01/outputs/videos",
+		"videoSavePath" : "datas/pose_tasks/HikvCamera01/outputs/videos"
 	}
 }

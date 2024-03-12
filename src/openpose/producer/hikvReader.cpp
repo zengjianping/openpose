@@ -421,6 +421,23 @@ namespace op
                 // Configure trigger
                 configCameraTrigger(cameraHandle, mCameraTriggerMode);
 
+                // Camera exposure
+                nRet = MV_CC_SetEnumValue(cameraHandle, "ExposureAuto", 2);
+                if (MV_OK != nRet)
+                {
+                    std::string message = "Failed to set auto-exposure! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
+
+                nRet = MV_CC_SetEnumValue(cameraHandle, "GainAuto", 2);
+                if (MV_OK != nRet)
+                {
+                    std::string message = "Failed to set auto-gain! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
+                
                 // Get the camera's feature description
                 /*tSdkCameraCapbility cameraCapbility;
                 CameraGetCapability(cameraHandle, &cameraCapbility);
@@ -431,13 +448,6 @@ namespace op
                 else
                     CameraSetIspOutFormat(cameraHandle,CAMERA_MEDIA_TYPE_BGR8);
 
-                // Camera exposure
-                bool autoExposure = true;
-                CameraSetAeState(cameraHandle, autoExposure);
-                CameraSetAeTarget(cameraCount, 80);
-                CameraSetAnalogGain(cameraHandle, 80);
-                CameraSetExposureTime(cameraHandle, 20 * 1000);
-                
                 // Set camera resolution
                 int widthMax = cameraCapbility.sResolutionRange.iWidthMax;
                 int heightMax = cameraCapbility.sResolutionRange.iHeightMax;

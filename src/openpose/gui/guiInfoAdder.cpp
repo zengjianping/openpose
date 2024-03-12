@@ -155,10 +155,10 @@ namespace op
             // Add each person ID
             addPeopleIds(cvOutputData, poseIds, poseKeypoints, borderMargin);
             // OpenPose name as well as help or part to show
-            putTextOnCvMat(cvOutputData, "OpenPose - " +
-                           (!mLastElementRenderedName.empty() ?
-                                mLastElementRenderedName : (mGuiEnabled ? "'h' for help" : "")),
-                           {borderMargin, borderMargin}, WHITE_SCALAR, false, cvOutputData.cols);
+            //putTextOnCvMat(cvOutputData, "OpenPose - " +
+            //               (!mLastElementRenderedName.empty() ?
+            //                    mLastElementRenderedName : (mGuiEnabled ? "'h' for help" : "")),
+            //               {borderMargin, borderMargin}, WHITE_SCALAR, false, cvOutputData.cols);
             // Frame number
             putTextOnCvMat(cvOutputData, "Frame: " + std::to_string(frameNumber),
                            {borderMargin, (int)(cvOutputData.rows - borderMargin)}, WHITE_SCALAR, false, cvOutputData.cols);

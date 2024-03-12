@@ -14,18 +14,20 @@
 		"cameraResolution" : "1224x1024",
 		"cameraTriggerMode" : 1,
 		"captureFps" : -1,
-		"frameUndistort" : true,
+		"frameUndistort" : false,
 		"inputType" : 3,
 		"videoPath" : "",
 		"viewNumber" : -1
 	},
 	"outputParams" : 
 	{
-		"imageSavePath" : "",
+		"imageSavePath" : "datas/pose_tasks/MindCamera01/outputs/images",
+		"poseSavePath" : "datas/pose_tasks/MindCamera01/outputs/poses",
 		"saveImage" : false,
+		"savePose" : false,
 		"saveVideo" : false,
 		"saveVideo3d" : false,
-		"video3dSavePath" : "",
-		"videoSavePath" : ""
+		"video3dSavePath" : "datas/pose_tasks/MindCamera01/outputs/videos",
+		"videoSavePath" : "datas/pose_tasks/MindCamera01/outputs/videos"
 	}
 }

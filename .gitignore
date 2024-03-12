@@ -136,5 +136,5 @@ html/
 *.mov
 
 ######################### Validation Scripts & Testing #########################
-output*/
+#output*/
 .vscode

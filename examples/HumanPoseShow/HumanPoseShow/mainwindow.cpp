@@ -75,10 +75,9 @@ int MainWindow::newTaskHelper()
         return 2;
 
     auto algoMode = humanPoseParams.algorithmParams.algoType;
-    QString newTaskName, newTaskFile, calibrationDir;
-    dialog.getCurrentTaskInfo(newTaskName, newTaskFile, calibrationDir);
-    HumanPoseParams params = HumanPoseParams();
-    params.inputParams.cameraParamPath = calibrationDir.toStdString();
+    QString newTaskName, newTaskFile, taskDir;
+    dialog.getCurrentTaskInfo(newTaskName, newTaskFile, taskDir);
+    HumanPoseParams params(taskDir.toStdString());
     std::string paramMd5;
     if (!params.saveToFile(newTaskFile.toStdString(), paramMd5))
         return 1;
@@ -112,9 +111,9 @@ int MainWindow::openTaskHelper()
         return 2;
 
     auto algoMode = humanPoseParams.algorithmParams.algoType;
-    QString newTaskName, newTaskFile, calibrationDir;
-    dialog.getCurrentTaskInfo(newTaskName, newTaskFile, calibrationDir);
-    HumanPoseParams params = HumanPoseParams();
+    QString newTaskName, newTaskFile, taskDir;
+    dialog.getCurrentTaskInfo(newTaskName, newTaskFile, taskDir);
+    HumanPoseParams params;
     std::string paramMd5;
     if (!params.loadFromFile(newTaskFile.toStdString(), paramMd5))
         return 1;
@@ -489,6 +488,7 @@ void MainWindow::createDockWindows()
     dock->setWidget(widgetCameraCalib);
     addDockWidget(Qt::RightDockWidgetArea, dock);
     viewMenu->addAction(dock->toggleViewAction());
+    dock->setMinimumSize(QSize(448,448));
 
     dock = new QDockWidget(tr("3D姿态视图"), this);
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
@@ -498,7 +498,8 @@ void MainWindow::createDockWindows()
     dock->setWidget(widgetPoseRender);
     addDockWidget(Qt::RightDockWidgetArea, dock);
     viewMenu->addAction(dock->toggleViewAction());
-
+    dock->setMinimumSize(QSize(640,640));
+    
     dock = new QDockWidget(tr("3D姿态数据"), this);
     paragraphsList = new QListWidget(dock);
     paragraphsList->addItems(QStringList()
@@ -506,5 +507,7 @@ void MainWindow::createDockWindows()
     dock->setWidget(paragraphsList);
     addDockWidget(Qt::RightDockWidgetArea, dock);
     viewMenu->addAction(dock->toggleViewAction());
+    dock->resize(800, 400);
+    dock->hide();
 }
 

@@ -21,17 +21,17 @@ DialogTaskList::~DialogTaskList()
 
 QString DialogTaskList::getTaskDirectory()
 {
-    return QDir::currentPath() + "/datas/pose_tasks";
+    //return QDir::currentPath() + "/datas/pose_tasks";
+    return "datas/pose_tasks";
 }
 
-void DialogTaskList::getCurrentTaskInfo(QString& taskName, QString& taskFile, QString& calibrationDir)
+void DialogTaskList::getCurrentTaskInfo(QString& taskName, QString& taskFile, QString& taskDir)
 {
     QString workPath = getTaskDirectory();
     if (newTaskMode)
     {
         taskName = ui->editTaskName->text();
         QDir(workPath).mkdir(taskName);
-        QDir(workPath+"/"+taskName).mkdir("calibration");
         taskFile = workPath + "/" + taskName + "/config.json";
     }
     else
@@ -40,7 +40,7 @@ void DialogTaskList::getCurrentTaskInfo(QString& taskName, QString& taskFile, QS
         taskName = taskNames[currSelIndex];
         taskFile = taskFiles[currSelIndex];
     }
-    calibrationDir = workPath + "/" + taskName + "/calibration";
+    taskDir = workPath + "/" + taskName;
 }
 
 void DialogTaskList::initialzieUI()

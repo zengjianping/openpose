@@ -395,6 +395,13 @@ private:
     std::shared_ptr<op::StereoPoseRender> stereoPoseRender_;
 };
 
+std::string formatTimeString() {
+    time_t t = time(0);
+    char buffer[256];
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d_%H-%M-%S", localtime(&t));
+    return std::string(buffer);
+}
+
 void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, HumanPoseProcessorCallback* callback)
 {
     try
@@ -541,12 +548,29 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
         batch_process = params.algorithmParams.batchProcess;
         process_real_time = params.algorithmParams.realTimeProcess;
 
-        if (params.outputParams.saveImage && !params.outputParams.imageSavePath.empty())
-            write_images = params.outputParams.imageSavePath;
-        if (params.outputParams.saveVideo && !params.outputParams.videoSavePath.empty())
-            write_video = params.outputParams.videoSavePath;
-        if (params.outputParams.saveVideo3d && !params.outputParams.video3dSavePath.empty())
-            write_video_3d = params.outputParams.video3dSavePath;
+        std::string strTime  = formatTimeString();
+        if (params.outputParams.saveImage && !params.outputParams.imageSavePath.empty()) {
+            std::string strSubDir = strTime;
+            std::string strDir = op::formatAsDirectory(params.outputParams.imageSavePath);
+            write_images = strDir + strSubDir;
+            op::makeDirectory(write_images);
+        }
+        if (params.outputParams.saveVideo && !params.outputParams.videoSavePath.empty()) {
+            std::string strFile = strTime + ".mp4";
+            std::string strDir = op::formatAsDirectory(params.outputParams.videoSavePath);
+            write_video = strDir + strFile;
+        }
+        if (params.outputParams.saveVideo3d && !params.outputParams.video3dSavePath.empty()) {
+            std::string strFile = strTime + "_3d.mp4";
+            std::string strDir = op::formatAsDirectory(params.outputParams.video3dSavePath);
+            write_video_3d = strDir + strFile;
+        }
+        if (params.outputParams.savePose && !params.outputParams.poseSavePath.empty()) {
+            std::string strSubDir = strTime;
+            std::string strDir = op::formatAsDirectory(params.outputParams.poseSavePath);
+            write_json = strDir + strSubDir;
+            op::makeDirectory(write_json);
+        }
 
         // logging_level
         op::ConfigureLog::setPriorityThreshold(logging_level);
@@ -674,6 +698,25 @@ std::string getMD5(const std::string& input) {
     return digest;
 }
 
+HumanPoseParams::HumanPoseParams()
+{
+}
+
+HumanPoseParams::HumanPoseParams(const std::string& taskPrefix)
+{
+    inputParams.cameraParamPath = op::formatAsDirectory(taskPrefix) + "calibration";
+    op::makeDirectory(inputParams.cameraParamPath);
+
+    std::string outputDir = op::formatAsDirectory(op::formatAsDirectory(taskPrefix) + "outputs");
+    op::makeDirectory(outputDir);
+
+    outputParams.imageSavePath = outputDir + "images";
+    op::makeDirectory(outputParams.imageSavePath);
+    outputParams.videoSavePath = outputDir + "videos";
+    op::makeDirectory(outputParams.videoSavePath);
+    outputParams.video3dSavePath = outputParams.videoSavePath;
+}
+
 bool HumanPoseParams::loadFromFile(const std::string& paramFile, std::string& md5)
 {
     Json::Value root;
@@ -722,6 +765,8 @@ bool HumanPoseParams::loadFromFile(const std::string& paramFile, std::string& md
     outputParams.videoSavePath = outputValue["videoSavePath"].asString();
     outputParams.saveVideo3d = outputValue["saveVideo3d"].asBool();
     outputParams.video3dSavePath = outputValue["video3dSavePath"].asString();
+    outputParams.savePose = outputValue["savePose"].asBool();
+    outputParams.poseSavePath = outputValue["poseSavePath"].asString();
 
     return true;
 }
@@ -752,6 +797,8 @@ bool HumanPoseParams::saveToFile(const std::string& paramFile, std::string& md5)
     outputValue["videoSavePath"] = Json::Value(outputParams.videoSavePath);
     outputValue["saveVideo3d"] = Json::Value(outputParams.saveVideo3d);
     outputValue["video3dSavePath"] = Json::Value(outputParams.video3dSavePath);
+    outputValue["savePose"] = Json::Value(outputParams.savePose);
+    outputValue["poseSavePath"] = Json::Value(outputParams.poseSavePath);
 
     root["inputParams"] = inputValue;
     root["outputParams"] = outputValue;

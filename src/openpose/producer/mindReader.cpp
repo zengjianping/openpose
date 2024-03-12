@@ -417,11 +417,12 @@ namespace op
                 configCameraTrigger(cameraHandle, mCameraTriggerMode);
 
                 // Camera exposure
-                bool autoExposure = true;
-                CameraSetAeState(cameraHandle, autoExposure);
-                CameraSetAeTarget(cameraHandle, 80);
-                CameraSetAnalogGain(cameraHandle, 80);
-                CameraSetExposureTime(cameraHandle, 20 * 1000);
+                CameraSetAeState(cameraHandle, true);
+                CameraSetAeExposureRange(cameraHandle, 1000*1, 1000*1000);
+                CameraSetAeAnalogGainRange(cameraHandle, 10, 2500);
+                CameraSetAeTarget(cameraHandle, 100);
+                //CameraSetAnalogGain(cameraHandle, 80);
+                //CameraSetExposureTime(cameraHandle, 20 * 1000);
                 
                 // Set camera resolution
                 int widthMax = cameraCapbility.sResolutionRange.iWidthMax;
@@ -468,6 +469,7 @@ namespace op
             // Sanity check
             if (cvMats.empty())
                 error("Cameras could not be opened.", __LINE__, __FUNCTION__, __FILE__);
+
             // Get resolution
             mResolution = Point<int>{cvMats[0].cols(), cvMats[0].rows()};
             opLog("Video resolution: " + std::to_string(mResolution.x) + "x" + std::to_string(mResolution.y));
@@ -478,6 +480,7 @@ namespace op
         }
         catch (const std::exception& e)
         {
+            clear();
             error(e.what(), __LINE__, __FUNCTION__, __FILE__);
         }
     }
@@ -566,14 +569,13 @@ namespace op
 
                 // Get frame
                 bool imagesExtracted = true;
-                for (int i = 0; i < mCameraCount; i++)
-                {
-                    int cameraHandle = mCameraHandles[i];
+                auto capture = [&](int cameraIndex) {
+                    int cameraHandle = mCameraHandles[cameraIndex];
                     tSdkFrameHead sFrameInfo;
                     BYTE* pbyBuffer = nullptr;
 
                     //unsigned char*pRgbBuffer = (unsigned char*)malloc(mResolution.x*mResolution.y*3);
-                    CameraSdkStatus status = CameraGetImageBuffer(cameraHandle, &sFrameInfo, &pbyBuffer, 1000);
+                    CameraSdkStatus status = CameraGetImageBuffer(cameraHandle, &sFrameInfo, &pbyBuffer, 2000);
 
                     if(status == CAMERA_STATUS_SUCCESS)
                     {
@@ -583,9 +585,10 @@ namespace op
                             sFrameInfo.uiMediaType == CAMERA_MEDIA_TYPE_MONO8 ? CV_8UC1 : CV_8UC3);
                         CameraImageProcess(cameraHandle, pbyBuffer, matImage.data, &sFrameInfo);
                         if (imgWidth != mResolution.x || imgHeight != mResolution.y)
-                            cv::resize(matImage, cvMats.at(i), cv::Size(mResolution.x, mResolution.y));
+                            cv::resize(matImage, cvMats.at(cameraIndex), cv::Size(mResolution.x, mResolution.y));
                         else
-                            cvMats.at(i) = matImage;
+                            cvMats.at(cameraIndex) = matImage;
+                        //cvMats.at(i).create(cv::Size(mResolution.x, mResolution.y), CV_8UC3);
             			CameraReleaseImageBuffer(cameraHandle, pbyBuffer);
                     }
                     else
@@ -594,6 +597,26 @@ namespace op
                         opLog(message);
                         //delete pRgbBuffer;
                         imagesExtracted = false;
+                    }
+                };
+
+                if (false)
+                {
+                    for (int i = 0; i < mCameraCount; i++)
+                    {
+                        capture(i);
+                    }
+                }
+                else
+                {
+                    std::vector<std::unique_ptr<std::thread>> capture_threads(mCameraCount);
+                    for (int i = 0; i < mCameraCount; i++)
+                    {
+                        capture_threads[i].reset(new std::thread(capture, i));
+                    }
+                    for (size_t i = 0; i < capture_threads.size(); ++i) {
+                        if (capture_threads[i]->joinable())
+                            capture_threads[i]->join();
                     }
                 }
 
@@ -704,7 +727,8 @@ namespace op
 
             // Retrieve frame
             bool cvMatRetrieved = false;
-            while (!cvMatRetrieved)
+            int try_count = 0;
+            while (!cvMatRetrieved && try_count++ < 1000)
             {
                 // Retrieve frame
                 std::unique_lock<std::mutex> lock{mBufferMutex};
@@ -719,7 +743,7 @@ namespace op
                 else
                 {
                     lock.unlock();
-                    std::this_thread::sleep_for(std::chrono::microseconds{5});
+                    std::this_thread::sleep_for(std::chrono::microseconds{1000});
                 }
             }
 
@@ -799,6 +823,7 @@ namespace op
             // Set resolution
             set(cv::CAP_PROP_FRAME_WIDTH, resolution.x);
             set(cv::CAP_PROP_FRAME_HEIGHT, resolution.y);
+            mCaptureFps = captureFps;
         }
         catch (const std::exception& e)
         {
@@ -948,7 +973,7 @@ namespace op
             else if (capProperty == cv::CAP_PROP_FRAME_COUNT)
                 return -1.;
             else if (capProperty == cv::CAP_PROP_FPS)
-                return -1.;
+                return mCaptureFps;
             else
             {
                 opLog("Unknown property.", Priority::Max, __LINE__, __FUNCTION__, __FILE__);

@@ -8,6 +8,9 @@
 
 struct HumanPoseParams
 {
+    HumanPoseParams();
+    HumanPoseParams(const std::string& taskPrefix);
+
     bool loadFromFile(const std::string& paramFile, std::string& md5);
     bool saveToFile(const std::string& paramFile, std::string& md5);
 
@@ -41,6 +44,8 @@ struct HumanPoseParams
         std::string videoSavePath = "";
         bool saveVideo3d = false;
         std::string video3dSavePath = "";
+        bool savePose = false;
+        std::string poseSavePath = "";
     };
 
     struct AlgorithmParams
