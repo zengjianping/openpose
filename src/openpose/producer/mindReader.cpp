@@ -575,7 +575,7 @@ namespace op
                     BYTE* pbyBuffer = nullptr;
 
                     //unsigned char*pRgbBuffer = (unsigned char*)malloc(mResolution.x*mResolution.y*3);
-                    CameraSdkStatus status = CameraGetImageBuffer(cameraHandle, &sFrameInfo, &pbyBuffer, 2000);
+                    CameraSdkStatus status = CameraGetImageBuffer(cameraHandle, &sFrameInfo, &pbyBuffer, 1000);
 
                     if(status == CAMERA_STATUS_SUCCESS)
                     {
@@ -743,7 +743,7 @@ namespace op
                 else
                 {
                     lock.unlock();
-                    std::this_thread::sleep_for(std::chrono::microseconds{1000});
+                    std::this_thread::sleep_for(std::chrono::microseconds{5000});
                 }
             }
 
