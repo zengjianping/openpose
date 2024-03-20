@@ -3,10 +3,12 @@
 #include <openpose/filestream/imageSaver.hpp>
 #include <openpose/utilities/fileSystem.hpp>
 #include <openpose/utilities/string.hpp>
+#include <openpose/core/ctpl_stl.hpp>
 
 namespace op
 {
     const auto RANDOM_TEXT = "_r8904530ijyiopf9034jiop4g90j0yh795640h38j";
+    const std::string mImageFileExt = "jpg";
 
     struct VideoSaver::ImplVideoSaver
     {
@@ -21,6 +23,7 @@ namespace op
         cv::VideoWriter mVideoWriter;
         std::unique_ptr<ImageSaver> upImageSaver;
         std::string mTempImageFolder;
+        std::shared_ptr<ctpl::thread_pool> mThpoolSaveImage;
 
         ImplVideoSaver(const std::string& videoSaverPath, const int cvFourcc, const double fps,
                        const std::string& addAudioFromThisVideo) :
@@ -36,6 +39,7 @@ namespace op
             {
                 if (mUseFfmpeg)
                     mTempImageFolder = getFullFilePathNoExtension(mVideoSaverPath) + RANDOM_TEXT;
+                mThpoolSaveImage.reset(new ctpl::thread_pool(4, 0));
             }
             catch (const std::exception& e)
             {
@@ -109,6 +113,8 @@ namespace op
             // Images --> Video
             if (upImpl->mUseFfmpeg)
             {
+                upImpl->mThpoolSaveImage->stop(true);
+
                 opLog("JPG images temporarily generated in " + upImpl->mTempImageFolder + ".", op::Priority::High);
                 // FFmpeg command: Save video from images (override if video with same name exists)
                 // Framerate works with both `-r` and `-framerate` for an image folder. Source:
@@ -116,7 +122,7 @@ namespace op
                 // Very important: Either FPS flag must go before `-i`!!! Otherwise, it would either not work (`-r`)
                 // or do a weird resample (`-framerate`)
                 const std::string imageToVideoCommand = "ffmpeg -y -framerate " + std::to_string(upImpl->mFps)
-                    + " -i '" + upImpl->mTempImageFolder + "/%12d_rendered.jpg'"
+                    + " -i '" + upImpl->mTempImageFolder + "/%12d_rendered." + mImageFileExt + "'"
                     + " -c:v libx264 -pix_fmt yuv420p '"
                     + upImpl->mVideoSaverPath + "'";
                 opLog("Creating MP4 video out of JPG images by running:\n" + imageToVideoCommand + "\n",
@@ -212,7 +218,7 @@ namespace op
                 {
                     opLog("Temporarily saving video frames as JPG images in: " + upImpl->mTempImageFolder,
                         op::Priority::High);
-                    upImpl->upImageSaver.reset(new ImageSaver{upImpl->mTempImageFolder, "jpg"});
+                    upImpl->upImageSaver.reset(new ImageSaver{upImpl->mTempImageFolder, mImageFileExt});
                 }
                 // OpenCV video
                 else
@@ -222,28 +228,37 @@ namespace op
             // Sanity check
             if (!isOpened())
                 error("Video to write frames is not opened.", __LINE__, __FUNCTION__, __FILE__);
-            // Concat images
-            cv::Mat cvOutputData;
-            if (cvMats.size() > 1)
-                cv::hconcat(cvMats.data(), cvMats.size(), cvOutputData);
-            else
-                cvOutputData = cvMats.at(0);
-            // Sanity check
-            if (upImpl->mCvSize.x != cvOutputData.cols || upImpl->mCvSize.y != cvOutputData.rows)
-                error("You selected to write video (`--write_video`), but the frames to be saved have different"
-                      " resolution. You can only save frames with the same resolution.",
-                      __LINE__, __FUNCTION__, __FILE__);
-            // Save concatenated image
-            // FFmpeg video
-            if (upImpl->mUseFfmpeg)
+
+            auto process = [this, cvMats](int id, unsigned long long counter) -> void
             {
-                const auto opMat = OP_CV2OPMAT(cvOutputData);
-                upImpl->upImageSaver->saveImages(opMat, toFixedLengthString(upImpl->mImageSaverCounter, 12u));
-                upImpl->mImageSaverCounter++;
-            }
-            // OpenCV video
+                // Concat images
+                cv::Mat cvOutputData;
+                if (cvMats.size() > 1)
+                    cv::hconcat(cvMats.data(), cvMats.size(), cvOutputData);
+                else
+                    cvOutputData = cvMats.at(0);
+                // Sanity check
+                if (upImpl->mCvSize.x != cvOutputData.cols || upImpl->mCvSize.y != cvOutputData.rows)
+                    error("You selected to write video (`--write_video`), but the frames to be saved have different"
+                        " resolution. You can only save frames with the same resolution.",
+                        __LINE__, __FUNCTION__, __FILE__);
+                // Save concatenated image
+                // FFmpeg video
+                if (upImpl->mUseFfmpeg)
+                {
+                    const auto opMat = OP_CV2OPMAT(cvOutputData);
+                    upImpl->upImageSaver->saveImages(opMat, toFixedLengthString(counter, 12u));
+                }
+                // OpenCV video
+                else
+                    upImpl->mVideoWriter.write(cvOutputData);
+            };
+
+            if (true)
+                upImpl->mThpoolSaveImage->push(std::string(), process, upImpl->mImageSaverCounter);
             else
-                upImpl->mVideoWriter.write(cvOutputData);
+                process(0, upImpl->mImageSaverCounter);
+            upImpl->mImageSaverCounter++;
         }
         catch (const std::exception& e)
         {

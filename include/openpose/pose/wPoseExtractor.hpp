@@ -68,8 +68,9 @@ namespace op
             {
                 // Debugging log
                 opLogIfDebug("", Priority::Low, __LINE__, __FUNCTION__, __FILE__);
+
                 // Profiling speed
-                const auto profilerKey = Profiler::timerInit(__LINE__, __FUNCTION__, __FILE__);
+                auto profilerKey = Profiler::timerInit(__LINE__, __FUNCTION__, __FILE__);
 
                 // Extract people pose
                 if (mBatchProcessData && tDatums->size() > 1) {
@@ -80,6 +81,13 @@ namespace op
                     for (size_t i = 0; i < tDatums->size(); i++)
                         tDatums->at(i)->poseNetOutput = outputDatas[i];
                 }
+
+                // Profiling speed
+                Profiler::timerEnd(profilerKey);
+                Profiler::printAveragedTimeMsOnIterationX(profilerKey, __LINE__, __FUNCTION__, __FILE__);
+
+                // Profiling speed
+                profilerKey = Profiler::timerInit(__LINE__, __FUNCTION__, __FILE__);
 
                 for (auto i = 0u ; i < tDatums->size() ; i++)
                 // for (auto& tDatum : *tDatums)
@@ -104,9 +112,11 @@ namespace op
                     spPoseExtractor->trackLockThread(
                         tDatumPtr->poseKeypoints, tDatumPtr->poseIds, tDatumPtr->cvInputData, i, tDatumPtr->id);
                 }
+
                 // Profiling speed
                 Profiler::timerEnd(profilerKey);
                 Profiler::printAveragedTimeMsOnIterationX(profilerKey, __LINE__, __FUNCTION__, __FILE__);
+                
                 // Debugging log
                 opLogIfDebug("", Priority::Low, __LINE__, __FUNCTION__, __FILE__);
             }

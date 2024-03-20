@@ -130,6 +130,22 @@ namespace op
             else if (frames.size() == 1u)
                 displayFrame(frames[0], waitKeyValue);
             // >= 2 frames
+            else if (frames.size() == 4)
+            {
+                int num_frames = frames.size();
+                int width = frames[0].cols();
+                int height = frames[0].rows();
+                cv::Mat cvMat(height*2, width*2, CV_8UC(frames[0].channels()));
+                for (int row = 0; row < 2; row++)
+                for (int col = 0; col < 2; col++)
+                {
+                    const cv::Mat framesI = OP_OP2CVCONSTMAT(frames[row*2+col]);
+                    framesI.copyTo(cvMat(cv::Rect(width*col, height*row, width, height)));
+                }
+                cv::resize(cvMat, cvMat, cv::Size(width,height));
+                Matrix opMat = OP_CV2OPMAT(cvMat);
+                displayFrame(opMat, waitKeyValue);
+            }
             else
             {
                 // Prepare final cvMat

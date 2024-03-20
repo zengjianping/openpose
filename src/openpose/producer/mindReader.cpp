@@ -5,6 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <atomic>
 #include <mutex>
+#include <thread>
 #include "CameraApi.h"
 
 
@@ -33,6 +34,9 @@ namespace op
 
     protected:
         void clear();
+        static void grabImageCallback(CameraHandle hCamera, BYTE* pbyBuffer, tSdkFrameHead* pFrameHead, PVOID pContext);
+        void grabCameraImage(int cameraIndex, tSdkFrameHead& sFrameInfo, BYTE* pbyBuffer);
+        void triggerThread();
         void bufferingThread();
         std::vector<Matrix> acquireImages(const std::vector<Matrix>& opCameraIntrinsics,
             const std::vector<Matrix>& opCameraDistorsions);
@@ -45,8 +49,22 @@ namespace op
         int mCameraIndex = -1;
         int mCameraTriggerMode = 0;
         double mCaptureFps = -1;
-        bool mZoomAfterCapture = true;
+        bool mZoomAfterCapture = false;
+        bool mCaptureByCallback = true;
         Point<int> mResolution;
+        struct CameraInfo
+        {
+            CameraInfo(MindReaderImpl* reader, int handle, int index)
+            {
+                mReader = reader;
+                mHandle = handle;
+                mIndex = index;
+            }
+            MindReaderImpl* mReader;
+            int mHandle;
+            int mIndex;
+        };
+        std::vector<CameraInfo> mCameraInfos;
         std::vector<int> mCameraHandles;
         std::vector<tSdkCameraDevInfo> mCameraDevInfos;
         std::vector<std::string> mSerialNumbers;
@@ -60,7 +78,7 @@ namespace op
         // Thread
         bool mThreadOpened = false;
         std::atomic<bool> mCloseThread;
-        std::vector<cv::Mat> mBuffer;
+        std::vector<cv::Mat> mBuffer, mBufMats;
         std::mutex mBufferMutex;
         std::thread mThread;
 
@@ -332,6 +350,7 @@ namespace op
             tSdkCameraDevInfo cameraList[16];
             int cameraCount = 15;
             CameraSdkStatus status = CameraEnumerateDevice(cameraList, &cameraCount);
+            //cameraCount = std::min(2,cameraCount);
 
             if (status != CAMERA_STATUS_SUCCESS || cameraCount == 0)
             {
@@ -386,6 +405,7 @@ namespace op
             opLog("Camera system initialized.", Priority::High);
 
             // Start all cameras
+            mCameraInfos.reserve(mCameraCount);
             mCameraDevInfos.reserve(mCameraCount);
             mCameraHandles.reserve(mCameraCount);
 
@@ -406,7 +426,23 @@ namespace op
                 // Get the camera's feature description
                 tSdkCameraCapbility cameraCapbility;
                 CameraGetCapability(cameraHandle, &cameraCapbility);
-                
+
+                std::cout << "Hardware zoom: " << cameraCapbility.sIspCapacity.bZoomHD << std::endl;
+
+                for (int k = 0; k < cameraCapbility.iFrameSpeedDesc; k++)
+                {
+                    std::cout << "Camera speed " << cameraCapbility.pFrameSpeedDesc[k].iIndex
+                        << ": " << cameraCapbility.pFrameSpeedDesc[k].acDescription << std::endl;
+                }
+                //status = CameraSetFrameSpeed(cameraHandle, 2);
+                //status = CameraSetFrameRate(cameraHandle, 40);
+                if (status != CAMERA_STATUS_SUCCESS)
+                {
+                    std::string message = "Failed to set camera frame rate! Error code is "
+                        + std::to_string(status) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
+
                 // Mono cameras allow the ISP to directly output MONO data instead of the 24-bit grayscale expanded to R=G=B
                 if(cameraCapbility.sIspCapacity.bMonoSensor)
                     CameraSetIspOutFormat(cameraHandle,CAMERA_MEDIA_TYPE_MONO8);
@@ -418,7 +454,7 @@ namespace op
 
                 // Camera exposure
                 CameraSetAeState(cameraHandle, true);
-                CameraSetAeExposureRange(cameraHandle, 1000*1, 1000*1000);
+                CameraSetAeExposureRange(cameraHandle, 50, 1000*20);
                 CameraSetAeAnalogGainRange(cameraHandle, 10, 2500);
                 CameraSetAeTarget(cameraHandle, 100);
                 //CameraSetAnalogGain(cameraHandle, 80);
@@ -444,8 +480,25 @@ namespace op
                 }
                 SetCameraResolution(cameraHandle, offsetx, offsety, width, height);
 
+                if (mCaptureByCallback)
+                {
+                    mCameraInfos.push_back(CameraInfo(this, cameraHandle, i));
+                    CameraSetCallbackFunction(cameraHandle, grabImageCallback, &mCameraInfos[i], NULL);
+                }
+
+                mCameraDevInfos.push_back(cameraList[i]);
+                mCameraHandles.push_back(cameraHandle);
+            }
+
+            for(int i = 0; i < mCameraCount; i++)
+            {
+                CameraRstTimeStamp(mCameraHandles[i]);
+            }
+
+            for(int i = 0; i < mCameraCount; i++)
+            {
                 // Begin acquiring images
-                status = CameraPlay(cameraHandle);
+                status = CameraPlay(mCameraHandles[i]);
                 if (status != CAMERA_STATUS_SUCCESS)
                 {
                     std::string message = "Failed to play the camera! Error code is "
@@ -453,16 +506,22 @@ namespace op
                     error(message, __LINE__, __FUNCTION__, __FILE__);
                 }
 
-                mCameraDevInfos.push_back(cameraList[i]);
-                mCameraHandles.push_back(cameraHandle);
-
                 opLog("Camera " + std::to_string(i) + " started acquiring images...", Priority::High);
             }
 
             // Start buffering thread
-            mThreadOpened = true;
+            mThreadOpened = false;
             mCloseThread = false;
-            mThread = std::thread{&MindReaderImpl::bufferingThread, this};
+            if (!mCaptureByCallback)
+            {
+                mThreadOpened = true;
+                mThread = std::thread{&MindReaderImpl::bufferingThread, this};
+            }
+            else if (mCameraTriggerMode == 1 && mCaptureFps > 0)
+            {
+                mThreadOpened = true;
+                mThread = std::thread{&MindReaderImpl::triggerThread, this};
+            }
 
             // Get resolution
             const auto cvMats = getRawFrames();
@@ -546,6 +605,85 @@ namespace op
         }
     }
 
+    void MindReaderImpl::grabImageCallback(CameraHandle hCamera, BYTE* pbyBuffer, tSdkFrameHead* pFrameHead, PVOID pContext)
+    {
+        CameraInfo* cameraInfo = (CameraInfo*)pContext;
+        //double ms = cv::getTickCount() / cv::getTickFrequency()* 1000;
+        //printf("camera %d: %ld, %f, %f, %f\n", cameraInfo->mIndex, pthread_self(),
+        //    pFrameHead->uiTimeStamp/10.0, pFrameHead->uiExpTime/1000.0, ms);
+        cameraInfo->mReader->grabCameraImage(cameraInfo->mIndex, *pFrameHead, pbyBuffer);
+    }
+
+    void MindReaderImpl::grabCameraImage(int cameraIndex, tSdkFrameHead& sFrameInfo, BYTE* pbyBuffer)
+    {
+        int cameraHandle = mCameraHandles[cameraIndex];
+        int imgWidth = sFrameInfo.iWidth;
+        int imgHeight = sFrameInfo.iHeight;
+
+        cv::Mat matImage(cv::Size(imgWidth, imgHeight), 
+            sFrameInfo.uiMediaType == CAMERA_MEDIA_TYPE_MONO8 ? CV_8UC1 : CV_8UC3);
+        CameraImageProcess(cameraHandle, pbyBuffer, matImage.data, &sFrameInfo);
+        CameraReleaseImageBuffer(cameraHandle, pbyBuffer);
+
+        cv::Mat cvMat;
+        if (imgWidth != mResolution.x || imgHeight != mResolution.y)
+            cv::resize(matImage, cvMat, cv::Size(mResolution.x, mResolution.y));
+        else
+            cvMat = matImage;
+
+        {
+            std::unique_lock<std::mutex> lock{mBufferMutex};
+            if (mBufMats.empty())
+                mBufMats.resize(mCameraCount);
+            mBufMats.at(cameraIndex) = cvMat;
+            bool imagesExtracted = true;
+            for (const cv::Mat& cvMat : mBufMats)
+            {
+                if (cvMat.empty())
+                {
+                    imagesExtracted = false;
+                    break;
+                }
+            }
+            if (imagesExtracted)
+            {
+                mBuffer.clear();
+                std::swap(mBuffer, mBufMats);
+                //double ms = cv::getTickCount() / cv::getTickFrequency()* 1000;
+                //printf("Producing image: %f, %ld, %ld\n", ms, mBuffer.size(), mBufMats.size());
+            }
+        }
+    }
+
+    void MindReaderImpl::triggerThread()
+    {
+        try
+        {
+            mCloseThread = false;
+
+            std::chrono::time_point<std::chrono::steady_clock> start_time, capture_time, current_time;
+            start_time = std::chrono::steady_clock::now();
+            int64_t capture_count = 0;
+
+            while (!mCloseThread)
+            {
+                // Trigger
+                for (int i = 0; i < mCameraCount; i++)
+                    grabNextImageByTrigger(mCameraHandles[i]);
+
+                int64_t microseconds = 1000000 * ++capture_count / mCaptureFps;
+                capture_time = start_time + std::chrono::microseconds(microseconds);
+                current_time = std::chrono::steady_clock::now();
+                if (capture_time > current_time)
+                    std::this_thread::sleep_until(capture_time);
+            }
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+        }
+    }
+
     void MindReaderImpl::bufferingThread()
     {
         try
@@ -579,17 +717,21 @@ namespace op
 
                     if(status == CAMERA_STATUS_SUCCESS)
                     {
+                        //double ms = cv::getTickCount() / cv::getTickFrequency()* 1000;
+                        //printf("camera %d: %ld, %f, %f, %f\n", cameraIndex, pthread_self(),
+                        //    sFrameInfo.uiTimeStamp/10.0, sFrameInfo.uiExpTime/1000.0, ms);
+
                         int imgWidth = sFrameInfo.iWidth;
                         int imgHeight = sFrameInfo.iHeight;
                         cv::Mat matImage(cv::Size(imgWidth, imgHeight), 
                             sFrameInfo.uiMediaType == CAMERA_MEDIA_TYPE_MONO8 ? CV_8UC1 : CV_8UC3);
                         CameraImageProcess(cameraHandle, pbyBuffer, matImage.data, &sFrameInfo);
+            			CameraReleaseImageBuffer(cameraHandle, pbyBuffer);
                         if (imgWidth != mResolution.x || imgHeight != mResolution.y)
                             cv::resize(matImage, cvMats.at(cameraIndex), cv::Size(mResolution.x, mResolution.y));
                         else
                             cvMats.at(cameraIndex) = matImage;
                         //cvMats.at(i).create(cv::Size(mResolution.x, mResolution.y), CV_8UC3);
-            			CameraReleaseImageBuffer(cameraHandle, pbyBuffer);
                     }
                     else
                     {
@@ -628,6 +770,8 @@ namespace op
                     std::swap(mBuffer, cvMats);
                     lock.unlock();
                     //std::this_thread::sleep_for(std::chrono::microseconds{1});
+                    //double ms = cv::getTickCount() / cv::getTickFrequency()* 1000;
+                    //printf("Producing image: %f\n", ms);
                 }
 
                 if (mCaptureFps > 0.)
@@ -728,7 +872,7 @@ namespace op
             // Retrieve frame
             bool cvMatRetrieved = false;
             int try_count = 0;
-            while (!cvMatRetrieved && try_count++ < 1000)
+            while (!cvMatRetrieved && try_count++ < 5000)
             {
                 // Retrieve frame
                 std::unique_lock<std::mutex> lock{mBufferMutex};
@@ -738,12 +882,14 @@ namespace op
                     //opLog("Consume images: " + std::to_string(++cnt));
                     std::swap(cvMats, mBuffer);
                     cvMatRetrieved = true;
+                    //double ms = cv::getTickCount() / cv::getTickFrequency()* 1000;
+                    //printf("Consuming image: %f\n", ms);
                 }
                 // No frames available -> sleep & wait
                 else
                 {
                     lock.unlock();
-                    std::this_thread::sleep_for(std::chrono::microseconds{5000});
+                    std::this_thread::sleep_for(std::chrono::microseconds{1000});
                 }
             }
 
