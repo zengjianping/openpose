@@ -604,7 +604,7 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
         const auto heatMapScaleMode = op::flagsToHeatMapScaleMode(heatmaps_scale_mode);
         // >1 camera view?
         const auto multipleView = (enable_3d || num_views_3d > 1 || flir_camera || mind_camera
-                                   || producerType == op::ProducerType::StereoVideo);
+                                   || hikv_camera || producerType == op::ProducerType::StereoVideo);
         // Face and hand detectors
         const auto faceDetector = op::flagsToDetector(face_detector);
         const auto handDetector = op::flagsToDetector(hand_detector);

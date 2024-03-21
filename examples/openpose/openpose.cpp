@@ -61,7 +61,7 @@ void configureWrapper(op::Wrapper& opWrapper)
         const auto heatMapScaleMode = op::flagsToHeatMapScaleMode(FLAGS_heatmaps_scale);
         // >1 camera view?
         const auto multipleView = (FLAGS_3d || FLAGS_3d_views > 1 || FLAGS_flir_camera || FLAGS_mind_camera
-                                   || producerType == op::ProducerType::StereoVideo);
+                                   || FLAGS_hikv_camera || producerType == op::ProducerType::StereoVideo);
         // Face and hand detectors
         const auto faceDetector = op::flagsToDetector(FLAGS_face_detector);
         const auto handDetector = op::flagsToDetector(FLAGS_hand_detector);
