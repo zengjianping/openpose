@@ -74,7 +74,7 @@ bool VideoFrameSorter::popFrames(std::vector<cv::Mat>& frames)
         for (int i = 0; i < mCameraCount; i++)
         {
             const std::shared_ptr<FrameData>& frameData = mFrameDataCache.front();
-            std::cout << " (" << frameData->mCameraIndex << ", " << frameData->mTimestamp << ")";
+            std::cout << " (" << frameData->mCameraIndex << ", " << (int64_t)round(frameData->mTimestamp) << ")";
             frames[frameData->mCameraIndex] = frameData->mFrame;
             mFrameDataCache.pop_front();
         }

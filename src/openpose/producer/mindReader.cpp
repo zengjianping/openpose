@@ -475,7 +475,7 @@ namespace op
                 // Camera exposure
                 double maxExposureTime = 50;
                 if (mCaptureFps > 0)
-                    maxExposureTime = std::min(maxExposureTime, std::max(10., 1000/mCaptureFps*2/3));
+                    maxExposureTime = std::min(maxExposureTime, std::max(5., 1000/mCaptureFps*2/3));
                 CameraSetAeState(cameraHandle, true);
                 CameraSetAeExposureRange(cameraHandle, 50, 1000*maxExposureTime);
                 CameraSetAeAnalogGainRange(cameraHandle, 10, 2500);
@@ -738,7 +738,7 @@ namespace op
 
             std::chrono::time_point<std::chrono::steady_clock> start_time, capture_time, current_time;
             start_time = std::chrono::steady_clock::now();
-            int64_t capture_count = 0;
+            int64_t captureCount = 0;
 
             while (!mCloseThread)
             {
@@ -753,7 +753,8 @@ namespace op
 
                 // Get frame
                 bool imagesExtracted = true;
-                auto capture = [&](int cameraIndex) {
+                auto capture = [&](int cameraIndex)
+                {
                     int cameraHandle = mCameraHandles[cameraIndex];
                     tSdkFrameHead sFrameInfo;
                     BYTE* pbyBuffer = nullptr;
@@ -781,7 +782,8 @@ namespace op
                     }
                     else
                     {
-                        std::string message = "Failed to capture image!, Error code is " + std::to_string(status) + ".";
+                        std::string message = "Failed to capture image!, Error code is "
+                            + std::to_string(status) + ".";
                         opLog(message);
                         //delete pRgbBuffer;
                         imagesExtracted = false;
@@ -822,7 +824,7 @@ namespace op
 
                 if (mCaptureFps > 0.)
                 {
-                    int64_t microseconds = 1000000 * ++capture_count / mCaptureFps;
+                    int64_t microseconds = 1000000 * ++captureCount / mCaptureFps;
                     capture_time = start_time + std::chrono::microseconds(microseconds);
                     current_time = std::chrono::steady_clock::now();
                     if (capture_time > current_time)

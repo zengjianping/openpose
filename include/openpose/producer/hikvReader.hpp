@@ -36,6 +36,7 @@ namespace op
     protected:
         std::shared_ptr<HikvReaderImpl> upImpl;
         Point<int> mResolution;
+        double mCaptureFps = -1.;
         unsigned long long mFrameNameCounter;
 
     protected:

@@ -2,9 +2,11 @@
 #include <openpose/utilities/fastMath.hpp>
 #include <openpose/utilities/string.hpp>
 #include <openpose/core/point.hpp>
+#include <openpose/producer/videoFrameSorter.hpp>
 #include <opencv2/opencv.hpp>
 #include <atomic>
 #include <mutex>
+#include <thread>
 #include "MvCameraControl.h"
 
 
@@ -18,7 +20,7 @@ namespace op
          * cameraIndex = -1 means that all cameras are taken
          */
         explicit HikvReaderImpl(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
-                    bool undistortImage, int cameraIndex=-1, int cameraTriggerMode=0, double captureFps=-1);
+                    bool undistortImage, int cameraIndex, int cameraTriggerMode, double& captureFps);
         virtual ~HikvReaderImpl();
 
     public:
@@ -33,6 +35,9 @@ namespace op
 
     protected:
         void clear();
+        static void grabImageCallback(unsigned char* pData, MV_FRAME_OUT_INFO_EX* pFrameInfo, void* pUser);
+        void grabCameraImage(int cameraIndex, MV_FRAME_OUT_INFO_EX& sFrameInfo, unsigned char* pData);
+        void triggerThread();
         void bufferingThread();
         std::vector<Matrix> acquireImages(const std::vector<Matrix>& opCameraIntrinsics,
             const std::vector<Matrix>& opCameraDistorsions);
@@ -46,7 +51,21 @@ namespace op
         int mCameraTriggerMode = 0;
         double mCaptureFps = -1;
         bool mZoomAfterCapture = true;
+        bool mCaptureByCallback = true;
         Point<int> mResolution;
+        struct CameraInfo
+        {
+            CameraInfo(HikvReaderImpl* reader, void* handle, int index)
+            {
+                mReader = reader;
+                mHandle = handle;
+                mIndex = index;
+            }
+            HikvReaderImpl* mReader;
+            void* mHandle;
+            int mIndex;
+        };
+        std::vector<CameraInfo> mCameraInfos;
         std::vector<void*> mCameraHandles;
         std::vector<MV_CC_DEVICE_INFO> mCameraDevInfos;
         std::vector<std::string> mSerialNumbers;
@@ -60,9 +79,10 @@ namespace op
         // Thread
         bool mThreadOpened = false;
         std::atomic<bool> mCloseThread;
-        std::vector<cv::Mat> mBuffer;
+        std::vector<cv::Mat> mBuffer, mBufMats;
         std::mutex mBufferMutex;
         std::thread mThread;
+        std::shared_ptr<VideoFrameSorter> videoFrameSorter;
 
     protected:
         DELETE_COPY(HikvReaderImpl);
@@ -157,12 +177,22 @@ namespace op
             // the camera to take pictures (to avoid accidentally fetching old pictures in the camera cache, the cache
             // is cleared before the trigger command)
             //CameraClearBuffer(cameraHandle);
-            int nRet = MV_CC_SetCommandValue(cameraHandle, "TriggerSoftware");
-            if(MV_OK != nRet)
+
+            int try_count = 0;
+            while (try_count++ < 1)
             {
-                std::string message = "Failed to trigger the camera! Error code is "
-                    + std::to_string(nRet) + ".";
-                error(message, __LINE__, __FUNCTION__, __FILE__);
+                int nRet = MV_CC_SetCommandValue(cameraHandle, "TriggerSoftware");
+                if (nRet == (int)MV_E_BUSY)
+                {
+                    std::cout << "Camera busy, please try again later!" << std::endl;
+                    //std::this_thread::sleep_for(std::chrono::microseconds{1000});
+                }
+                else if(MV_OK != nRet)
+                {
+                    std::string message = "Failed to trigger the camera! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
             }
         }
         catch (const std::exception& e)
@@ -171,85 +201,10 @@ namespace op
         }
     }
 
-    // offsetx, offsety, width, height: offset width and height are all chosen to be 16 times
-    // the best compatibility (different cameras have different requirements for this, some need
-    // only a multiple of 2, some may require a multiple of 16)
-    /*int SetCameraResolution(int cameraHandle, int offsetx, int offsety, int width, int height)
-    {
-        tSdkImageResolution sRoiResolution = { 0 };
-        
-        // Set to 0xff for custom resolution, set to 0 to N for select preset resolution
-        sRoiResolution.iIndex = 0xff;
-        
-        // iWidthFOV represents the camera's field of view width, iWidth represents the camera's
-        // actual output width. In most cases iWidthFOV=iWidth. Some special resolution modes such
-        // as BIN2X2:iWidthFOV=2*iWidth indicate that the field of view is twice the actual output width
-        sRoiResolution.iWidth = width;
-        sRoiResolution.iWidthFOV = width;
-        
-        // height, refer to the description of the width above
-        sRoiResolution.iHeight = height;
-        sRoiResolution.iHeightFOV = height;
-        
-        // Field of view offset
-        sRoiResolution.iHOffsetFOV = offsetx;
-        sRoiResolution.iVOffsetFOV = offsety;
-        
-        // ISP software zoom width and height, all 0 means not zoom
-        sRoiResolution.iWidthZoomSw = 0;
-        sRoiResolution.iHeightZoomSw = 0;
-        
-        // BIN SKIP mode setting (requires camera hardware support)
-        sRoiResolution.uBinAverageMode = 0;
-        sRoiResolution.uBinSumMode = 0;
-        sRoiResolution.uResampleMask = 0;
-        sRoiResolution.uSkipMode = 0;
-        
-        return CameraSetImageResolution(cameraHandle, &sRoiResolution);
-    }
-
-    int SetCameraResolutionEx(int cameraHandle, int width, int height, int widthMax, int heightMax)
-    {
-        tSdkImageResolution sRoiResolution = { 0 };
-        
-        // Set to 0xff for custom resolution, set to 0 to N for select preset resolution
-        sRoiResolution.iIndex = 0xff;
-        
-        // iWidthFOV represents the camera's field of view width, iWidth represents the camera's
-        // actual output width. In most cases iWidthFOV=iWidth. Some special resolution modes such
-        // as BIN2X2:iWidthFOV=2*iWidth indicate that the field of view is twice the actual output width
-        sRoiResolution.iWidth = width;
-        sRoiResolution.iWidthFOV = widthMax;
-        
-        // height, refer to the description of the width above
-        sRoiResolution.iHeight = height;
-        sRoiResolution.iHeightFOV = heightMax;
-        
-        // Field of view offset
-        sRoiResolution.iHOffsetFOV = 0;
-        sRoiResolution.iVOffsetFOV = 0;
-        
-        // ISP software zoom width and height, all 0 means not zoom
-        sRoiResolution.iWidthZoomSw = 0;
-        sRoiResolution.iHeightZoomSw = 0;
-        
-        // ISP hardware zoom width and height, all 0 means not zoom
-        sRoiResolution.iWidthZoomHd = width;
-        sRoiResolution.iHeightZoomHd = height;
-        
-        // BIN SKIP mode setting (requires camera hardware support)
-        sRoiResolution.uBinAverageMode = 0;
-        sRoiResolution.uBinSumMode = 0;
-        sRoiResolution.uResampleMask = 0;
-        sRoiResolution.uSkipMode = 0;
-        
-        return CameraSetImageResolution(cameraHandle, &sRoiResolution);
-    }*/
-
     }
 
     HikvReaderImpl::HikvReaderImpl(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
-                    bool undistortImage, int cameraIndex, int cameraTriggerMode, double captureFps)
+                    bool undistortImage, int cameraIndex, int cameraTriggerMode, double& captureFps)
     {
         mCameraIndex = cameraIndex;
         mCameraTriggerMode = cameraTriggerMode;
@@ -259,6 +214,11 @@ namespace op
         if (mCameraParameterPath.back() != '/')
             mCameraParameterPath.append(1, '/');
         mCaptureFps = captureFps;
+        if (mCaptureByCallback && mCameraTriggerMode==1 && captureFps <= 0)
+        {
+            mCaptureFps = 60;
+            captureFps = mCaptureFps;
+        }
 
         try
         {
@@ -393,8 +353,10 @@ namespace op
             opLog("Camera system initialized.", Priority::High);
 
             // Start all cameras
+            mCameraInfos.reserve(mCameraCount);
             mCameraDevInfos.reserve(mCameraCount);
             mCameraHandles.reserve(mCameraCount);
+            videoFrameSorter.reset(new VideoFrameSorter(mCameraCount));
 
             for(int i = 0; i < mCameraCount; i++)
             {
@@ -429,6 +391,36 @@ namespace op
                         + std::to_string(nRet) + ".";
                     error(message, __LINE__, __FUNCTION__, __FILE__);
                 }
+                nRet = MV_CC_SetIntValue(cameraHandle, "AutoExposureTimeLowerLimit", 50);
+                if (MV_OK != nRet)
+                {
+                    std::string message = "Failed to set AutoExposureTimeLowerLimit! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
+                MVCC_INTVALUE stUpperLimit;
+                nRet = MV_CC_GetIntValue(cameraHandle, "AutoExposureTimeUpperLimit", &stUpperLimit);
+                if (MV_OK != nRet)
+                {
+                    std::string message = "Failed to get AutoExposureTimeUpperLimit! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
+                else
+                {
+                    printf("AutoExposureTimeupperLimit: %d, %d, %d, %d\n", stUpperLimit.nCurValue,
+                        stUpperLimit.nMin, stUpperLimit.nMax, stUpperLimit.nInc);
+                }
+                double maxExposureTime = 50;
+                if (mCaptureFps > 0)
+                    maxExposureTime = std::min(maxExposureTime, std::max(5., 1000/mCaptureFps*2/3));
+                nRet = MV_CC_SetIntValue(cameraHandle, "AutoExposureTimeUpperLimit", 1000*maxExposureTime);
+                if (MV_OK != nRet)
+                {
+                    std::string message = "Failed to set AutoExposureTimeUpperLimit! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
 
                 nRet = MV_CC_SetEnumValue(cameraHandle, "GainAuto", 2);
                 if (MV_OK != nRet)
@@ -437,20 +429,60 @@ namespace op
                         + std::to_string(nRet) + ".";
                     error(message, __LINE__, __FUNCTION__, __FILE__);
                 }
-                
-                // Get the camera's feature description
-                /*tSdkCameraCapbility cameraCapbility;
-                CameraGetCapability(cameraHandle, &cameraCapbility);
-                
-                // Mono cameras allow the ISP to directly output MONO data instead of the 24-bit grayscale expanded to R=G=B
-                if(cameraCapbility.sIspCapacity.bMonoSensor)
-                    CameraSetIspOutFormat(cameraHandle,CAMERA_MEDIA_TYPE_MONO8);
+                MVCC_FLOATVALUE stGainLimit;
+                nRet = MV_CC_GetFloatValue(cameraHandle, "AutoGainLowerLimit", &stGainLimit);
+                if (MV_OK != nRet)
+                {
+                    std::string message = "Failed to get AutoGainLowerLimit! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
                 else
-                    CameraSetIspOutFormat(cameraHandle,CAMERA_MEDIA_TYPE_BGR8);
+                {
+                    printf("AutoGainLowerLimit: %f, %f, %f\n", stGainLimit.fCurValue,
+                        stGainLimit.fMin, stGainLimit.fMax);
+                }
+                nRet = MV_CC_GetFloatValue(cameraHandle, "AutoGainUpperLimit", &stGainLimit);
+                if (MV_OK != nRet)
+                {
+                    std::string message = "Failed to get AutoGainUpperLimit! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
+                else
+                {
+                    printf("AutoGainUpperLimit: %f, %f, %f\n", stGainLimit.fCurValue,
+                        stGainLimit.fMin, stGainLimit.fMax);
+                }
+
+                // Set pixel format
+                //unsigned int pixelFormat = PixelType_Gvsp_BayerGR8;
+                //nRet = MV_CC_SetEnumValue(cameraHandle, "PixelFormat", pixelFormat);
+                if (MV_OK != nRet)
+                {
+                    std::string message = "Failed to set pixel format! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
 
                 // Set camera resolution
-                int widthMax = cameraCapbility.sResolutionRange.iWidthMax;
-                int heightMax = cameraCapbility.sResolutionRange.iHeightMax;
+                MVCC_INTVALUE stWidth, stHeight;
+                nRet = MV_CC_GetIntValue(cameraHandle, "WidthMax", &stWidth);
+                if (MV_OK != nRet)
+                {
+                    std::string message = "Failed to get image max width! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
+                nRet = MV_CC_GetIntValue(cameraHandle, "HeightMax", &stHeight);
+                if (MV_OK != nRet)
+                {
+                    std::string message = "Failed to get image max height! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
+                int widthMax = stWidth.nCurValue;
+                int heightMax = stHeight.nCurValue;
                 int offsetx = 0, offsety = 0;
                 int width = widthMax, height = heightMax;
 
@@ -466,10 +498,67 @@ namespace op
                     width = mResolution.x;
                     height = mResolution.y;
                 }
-                SetCameraResolution(cameraHandle, offsetx, offsety, width, height);*/
 
+                nRet = MV_CC_SetIntValue(cameraHandle, "OffsetX", offsetx);    
+                if (MV_OK != nRet)
+                {
+                    std::string message = "Failed to set image offset x! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
+                nRet = MV_CC_SetIntValue(cameraHandle, "OffsetY", offsety);    
+                if (MV_OK != nRet)
+                {
+                    std::string message = "Failed to set image offset y! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
+                nRet = MV_CC_SetIntValue(cameraHandle, "Width", width);    
+                if (MV_OK != nRet)
+                {
+                    std::string message = "Failed to set image width! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
+                nRet = MV_CC_SetIntValue(cameraHandle, "Height", height);    
+                if (MV_OK != nRet)
+                {
+                    std::string message = "Failed to set image height! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
+
+                if (mCaptureByCallback)
+                {
+                    mCameraInfos.push_back(CameraInfo(this, cameraHandle, i));
+                    nRet = MV_CC_RegisterImageCallBackEx(cameraHandle, grabImageCallback, &mCameraInfos[i]);
+                    if (MV_OK != nRet)
+                    {
+                        std::string message = "Failed to set image callback! Error code is "
+                            + std::to_string(nRet) + ".";
+                        error(message, __LINE__, __FUNCTION__, __FILE__);
+                    }
+                }
+
+                mCameraDevInfos.push_back(*pDeviceInfo[i]);
+                mCameraHandles.push_back(cameraHandle);
+            }
+
+            for(int i = 0; i < mCameraCount; i++)
+            {
+                //nRet = MV_CC_SetCommandValue(mCameraHandles[i], "GevTimestampControlReset");
+                if(MV_OK != nRet)
+                {
+                    std::string message = "Failed to reset camera timestamp! Error code is "
+                        + std::to_string(nRet) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
+            }
+
+            for(int i = 0; i < mCameraCount; i++)
+            {
                 // Begin acquiring images
-                nRet = MV_CC_StartGrabbing(cameraHandle);
+                nRet = MV_CC_StartGrabbing(mCameraHandles[i]);
                 if (MV_OK != nRet)
                 {
                     std::string message = "Failed to play the camera! Error code is "
@@ -477,22 +566,29 @@ namespace op
                     error(message, __LINE__, __FUNCTION__, __FILE__);
                 }
 
-                mCameraDevInfos.push_back(*pDeviceInfo[i]);
-                mCameraHandles.push_back(cameraHandle);
-
                 opLog("Camera " + std::to_string(i) + " started acquiring images...", Priority::High);
             }
 
             // Start buffering thread
-            mThreadOpened = true;
+            mThreadOpened = false;
             mCloseThread = false;
-            mThread = std::thread{&HikvReaderImpl::bufferingThread, this};
+            if (!mCaptureByCallback)
+            {
+                mThreadOpened = true;
+                mThread = std::thread{&HikvReaderImpl::bufferingThread, this};
+            }
+            else if (mCameraTriggerMode == 1)
+            {
+                mThreadOpened = true;
+                mThread = std::thread{&HikvReaderImpl::triggerThread, this};
+            }
 
             // Get resolution
             const auto cvMats = getRawFrames();
             // Sanity check
             if (cvMats.empty())
                 error("Cameras could not be opened.", __LINE__, __FUNCTION__, __FILE__);
+
             // Get resolution
             mResolution = Point<int>{cvMats[0].cols(), cvMats[0].rows()};
             opLog("Video resolution: " + std::to_string(mResolution.x) + "x" + std::to_string(mResolution.y));
@@ -503,6 +599,7 @@ namespace op
         }
         catch (const std::exception& e)
         {
+            clear();
             error(e.what(), __LINE__, __FUNCTION__, __FILE__);
         }
     }
@@ -568,6 +665,115 @@ namespace op
         }
     }
 
+    void HikvReaderImpl::grabImageCallback(unsigned char* pData, MV_FRAME_OUT_INFO_EX* pFrameInfo, void* pUser)
+    {
+        CameraInfo* cameraInfo = (CameraInfo*)pUser;
+        cameraInfo->mReader->grabCameraImage(cameraInfo->mIndex, *pFrameInfo, pData);
+    }
+
+    void HikvReaderImpl::grabCameraImage(int cameraIndex, MV_FRAME_OUT_INFO_EX& sFrameInfo, unsigned char* pData)
+    {
+        void* cameraHandle = mCameraHandles[cameraIndex];
+        int imgWidth = sFrameInfo.nWidth;
+        int imgHeight = sFrameInfo.nHeight;
+        cv::Mat matImage(cv::Size(imgWidth, imgHeight), CV_8UC3);
+
+        // convert pixel format 
+        MV_CC_PIXEL_CONVERT_PARAM stConvertParam;
+        memset(&stConvertParam, 0, sizeof(MV_CC_PIXEL_CONVERT_PARAM));
+        // Top to bottom are：image width, image height, input data buffer, input data size, source pixel format, 
+        // destination pixel format, output data buffer, provided output buffer size
+        stConvertParam.nWidth = imgWidth;
+        stConvertParam.nHeight = imgHeight;
+        stConvertParam.pSrcData = pData;
+        stConvertParam.nSrcDataLen = sFrameInfo.nFrameLen;
+        stConvertParam.enSrcPixelType = sFrameInfo.enPixelType;
+        stConvertParam.enDstPixelType = PixelType_Gvsp_BGR8_Packed;
+        stConvertParam.pDstBuffer = matImage.data;
+        stConvertParam.nDstBufferSize = matImage.dataend - matImage.data;
+        int nRet = MV_CC_ConvertPixelType(cameraHandle, &stConvertParam);
+        if (MV_OK != nRet)
+        {
+            std::string message = "Failed to convert image! Error code is "
+                + std::to_string(nRet) + ".";
+            error(message, __LINE__, __FUNCTION__, __FILE__);
+        }
+
+        cv::Mat cvMat;
+        if (imgWidth != mResolution.x || imgHeight != mResolution.y)
+            cv::resize(matImage, cvMat, cv::Size(mResolution.x, mResolution.y));
+        else
+            cvMat = matImage;
+
+        if (true)
+        {
+            double ms = cv::getTickCount() / cv::getTickFrequency()* 1000;
+            double timestamp = ((uint64_t)sFrameInfo.nDevTimeStampHigh << 32 | (uint64_t)sFrameInfo.nDevTimeStampLow);
+            timestamp /= 100000;
+            printf("camera %d: %ld, %f, %ld, %f\n", cameraIndex, pthread_self(), timestamp,
+                sFrameInfo.nHostTimeStamp, ms);
+            videoFrameSorter->pushFrame(cvMat, cameraIndex, sFrameInfo.nHostTimeStamp);
+            std::vector<cv::Mat> cvMats;
+            if (videoFrameSorter->popFrames(cvMats))
+            {
+                std::unique_lock<std::mutex> lock{mBufferMutex};
+                std::swap(mBuffer, cvMats);
+            }
+        }
+        else
+        {
+            std::unique_lock<std::mutex> lock{mBufferMutex};
+            if (mBufMats.empty())
+                mBufMats.resize(mCameraCount);
+            mBufMats.at(cameraIndex) = cvMat;
+            bool imagesExtracted = true;
+            for (const cv::Mat& cvMat : mBufMats)
+            {
+                if (cvMat.empty())
+                {
+                    imagesExtracted = false;
+                    break;
+                }
+            }
+            if (imagesExtracted)
+            {
+                mBuffer.clear();
+                std::swap(mBuffer, mBufMats);
+                //double ms = cv::getTickCount() / cv::getTickFrequency()* 1000;
+                //printf("Producing image: %f, %ld, %ld\n", ms, mBuffer.size(), mBufMats.size());
+            }
+        }
+    }
+
+    void HikvReaderImpl::triggerThread()
+    {
+        try
+        {
+            mCloseThread = false;
+
+            std::chrono::time_point<std::chrono::steady_clock> start_time, capture_time, current_time;
+            start_time = std::chrono::steady_clock::now();
+            int64_t capture_count = 0;
+
+            while (!mCloseThread)
+            {
+                // Trigger
+                for (int i = 0; i < mCameraCount; i++)
+                    grabNextImageByTrigger(mCameraHandles[i]);
+
+                int64_t microseconds = 1000000 * ++capture_count / mCaptureFps;
+                capture_time = start_time + std::chrono::microseconds(microseconds);
+                current_time = std::chrono::steady_clock::now();
+                if (capture_time > current_time)
+                    std::this_thread::sleep_until(capture_time);
+            }
+        }
+        catch (const std::exception& e)
+        {
+            error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+        }
+    }
+
     void HikvReaderImpl::bufferingThread()
     {
         try
@@ -614,34 +820,36 @@ namespace op
 
                 // Get frame
                 bool imagesExtracted = true;
-                for (int i = 0; i < mCameraCount; i++)
+                auto capture = [&](int cameraIndex)
                 {
-                    void* cameraHandle = mCameraHandles[i];
-                    MV_FRAME_OUT_INFO_EX stImageInfo = {0};
-                    int nRet = MV_CC_GetOneFrameTimeout(cameraHandle, payloadDatas[i], payloadSizes[i], &stImageInfo, 1000);
+                    void* cameraHandle = mCameraHandles[cameraIndex];
+                    MV_FRAME_OUT_INFO_EX stImageInfo;
+                    memset(&stImageInfo, 0, sizeof(MV_FRAME_OUT_INFO_EX));
+                    int nRet = MV_CC_GetOneFrameTimeout(cameraHandle, payloadDatas[cameraIndex], payloadSizes[cameraIndex], &stImageInfo, 1000);
                     if (nRet == MV_OK)
                     {
                         //printf("GetOneFrame, Width[%d], Height[%d], nFrameLen[%d], enPixelType[%ld]\n",
                         //    stImageInfo.nWidth, stImageInfo.nHeight, stImageInfo.nFrameLen, stImageInfo.enPixelType);
                         //printf("mResolutionX[%d], mResolutionY[%d]\n", mResolution.x, mResolution.y);
-                        if (rgbImageDatas[i] == nullptr)
+                        if (rgbImageDatas[cameraIndex] == nullptr)
                         {
-                            rgbImageSizes[i] = stImageInfo.nWidth * stImageInfo.nHeight *  4 + 2048;
-                            rgbImageDatas[i] = (unsigned char *)malloc(sizeof(unsigned char) * rgbImageSizes[i]);
+                            rgbImageSizes[cameraIndex] = stImageInfo.nWidth * stImageInfo.nHeight *  4 + 2048;
+                            rgbImageDatas[cameraIndex] = (unsigned char *)malloc(sizeof(unsigned char) * rgbImageSizes[cameraIndex]);
                         }
         
                         // convert pixel format 
-                        MV_CC_PIXEL_CONVERT_PARAM stConvertParam = {0};
+                        MV_CC_PIXEL_CONVERT_PARAM stConvertParam;
+                        memset(&stConvertParam, 0, sizeof(MV_CC_PIXEL_CONVERT_PARAM));
                         // Top to bottom are：image width, image height, input data buffer, input data size, source pixel format, 
                         // destination pixel format, output data buffer, provided output buffer size
                         stConvertParam.nWidth = stImageInfo.nWidth;
                         stConvertParam.nHeight = stImageInfo.nHeight;
-                        stConvertParam.pSrcData = payloadDatas[i];
+                        stConvertParam.pSrcData = payloadDatas[cameraIndex];
                         stConvertParam.nSrcDataLen = stImageInfo.nFrameLen;
                         stConvertParam.enSrcPixelType = stImageInfo.enPixelType;
                         stConvertParam.enDstPixelType = PixelType_Gvsp_BGR8_Packed;
-                        stConvertParam.pDstBuffer = rgbImageDatas[i];
-                        stConvertParam.nDstBufferSize = rgbImageSizes[i];
+                        stConvertParam.pDstBuffer = rgbImageDatas[cameraIndex];
+                        stConvertParam.nDstBufferSize = rgbImageSizes[cameraIndex];
                         nRet = MV_CC_ConvertPixelType(cameraHandle, &stConvertParam);
                         if (MV_OK != nRet)
                         {
@@ -652,18 +860,39 @@ namespace op
 
                         int imgWidth = stImageInfo.nWidth;
                         int imgHeight = stImageInfo.nHeight;
-                        cv::Mat matImage(cv::Size(imgWidth, imgHeight), CV_8UC3, rgbImageDatas[i]);
+                        cv::Mat matImage(cv::Size(imgWidth, imgHeight), CV_8UC3, rgbImageDatas[cameraIndex]);
                         if (mResolution.x > 0 && mResolution.y > 0 && (imgWidth != mResolution.x || imgHeight != mResolution.y))
-                            cv::resize(matImage, cvMats.at(i), cv::Size(mResolution.x, mResolution.y));
+                            cv::resize(matImage, cvMats.at(cameraIndex), cv::Size(mResolution.x, mResolution.y));
                         else
-                            matImage.copyTo(cvMats.at(i));
+                            matImage.copyTo(cvMats.at(cameraIndex));
                     }
                     else
                     {
-                        std::string message = "Failed to capture image!, Error code is " + std::to_string(nRet) + ".";
+                        std::string message = "Failed to capture image!, Error code is "
+                            + std::to_string(nRet) + ".";
                         opLog(message);
                         //delete pRgbBuffer;
                         imagesExtracted = false;
+                    }
+                };
+
+                if (false)
+                {
+                    for (int i = 0; i < mCameraCount; i++)
+                    {
+                        capture(i);
+                    }
+                }
+                else
+                {
+                    std::vector<std::unique_ptr<std::thread>> capture_threads(mCameraCount);
+                    for (int i = 0; i < mCameraCount; i++)
+                    {
+                        capture_threads[i].reset(new std::thread(capture, i));
+                    }
+                    for (size_t i = 0; i < capture_threads.size(); ++i) {
+                        if (capture_threads[i]->joinable())
+                            capture_threads[i]->join();
                     }
                 }
 
@@ -782,7 +1011,8 @@ namespace op
 
             // Retrieve frame
             bool cvMatRetrieved = false;
-            while (!cvMatRetrieved)
+            int try_count = 0;
+            while (!cvMatRetrieved && try_count++ < 5000)
             {
                 // Retrieve frame
                 std::unique_lock<std::mutex> lock{mBufferMutex};
@@ -797,7 +1027,7 @@ namespace op
                 else
                 {
                     lock.unlock();
-                    std::this_thread::sleep_for(std::chrono::microseconds{5});
+                    std::this_thread::sleep_for(std::chrono::microseconds{1000});
                 }
             }
 
@@ -877,6 +1107,7 @@ namespace op
             // Set resolution
             set(cv::CAP_PROP_FRAME_WIDTH, resolution.x);
             set(cv::CAP_PROP_FRAME_HEIGHT, resolution.y);
+            mCaptureFps = captureFps;
         }
         catch (const std::exception& e)
         {
@@ -1026,7 +1257,7 @@ namespace op
             else if (capProperty == cv::CAP_PROP_FRAME_COUNT)
                 return -1.;
             else if (capProperty == cv::CAP_PROP_FPS)
-                return -1.;
+                return mCaptureFps;
             else
             {
                 opLog("Unknown property.", Priority::Max, __LINE__, __FUNCTION__, __FILE__);
