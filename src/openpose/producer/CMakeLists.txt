@@ -11,6 +11,7 @@ set(SOURCES_OP_PRODUCER
     stereoVideoReader.cpp
     mindReader.cpp
     hikvReader.cpp
+    videoFrameSorter.cpp
     webcamReader.cpp)
 
 include(${CMAKE_SOURCE_DIR}/cmake/Utils.cmake)

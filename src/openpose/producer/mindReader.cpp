@@ -2,6 +2,7 @@
 #include <openpose/utilities/fastMath.hpp>
 #include <openpose/utilities/string.hpp>
 #include <openpose/core/point.hpp>
+#include <openpose/producer/videoFrameSorter.hpp>
 #include <opencv2/opencv.hpp>
 #include <atomic>
 #include <mutex>
@@ -19,7 +20,7 @@ namespace op
          * cameraIndex = -1 means that all cameras are taken
          */
         explicit MindReaderImpl(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
-                    bool undistortImage, int cameraIndex=-1, int cameraTriggerMode=0, double captureFps=-1);
+                    bool undistortImage, int cameraIndex, int cameraTriggerMode, double& captureFps);
         virtual ~MindReaderImpl();
 
     public:
@@ -81,6 +82,7 @@ namespace op
         std::vector<cv::Mat> mBuffer, mBufMats;
         std::mutex mBufferMutex;
         std::thread mThread;
+        std::shared_ptr<VideoFrameSorter> videoFrameSorter;
 
     protected:
         DELETE_COPY(MindReaderImpl);
@@ -179,12 +181,22 @@ namespace op
             // the camera to take pictures (to avoid accidentally fetching old pictures in the camera cache, the cache
             // is cleared before the trigger command)
             CameraClearBuffer(cameraHandle);
-            CameraSdkStatus status = CameraSoftTrigger(cameraHandle);
-            if (status != CAMERA_STATUS_SUCCESS)
+
+            int try_count = 0;
+            while (try_count++ < 1)
             {
-                std::string message = "Failed to trigger the camera! Error code is "
-                    + std::to_string(status) + ".";
-                error(message, __LINE__, __FUNCTION__, __FILE__);
+                CameraSdkStatus status = CameraSoftTrigger(cameraHandle);
+                if (status == CAMERA_AIA_BUSY)
+                {
+                    std::cout << "Camera busy, please try again later!" << std::endl;
+                    //std::this_thread::sleep_for(std::chrono::microseconds{1000});
+                }
+                else if (status != CAMERA_STATUS_SUCCESS)
+                {
+                    std::string message = "Failed to trigger the camera! Error code is "
+                        + std::to_string(status) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }
             }
         }
         catch (const std::exception& e)
@@ -198,7 +210,8 @@ namespace op
     // only a multiple of 2, some may require a multiple of 16)
     int SetCameraResolution(int cameraHandle, int offsetx, int offsety, int width, int height)
     {
-        tSdkImageResolution sRoiResolution = { 0 };
+        tSdkImageResolution sRoiResolution;
+        memset(&sRoiResolution, 0, sizeof(tSdkImageResolution));
         
         // Set to 0xff for custom resolution, set to 0 to N for select preset resolution
         sRoiResolution.iIndex = 0xff;
@@ -232,7 +245,8 @@ namespace op
 
     int SetCameraResolutionEx(int cameraHandle, int width, int height, int widthMax, int heightMax)
     {
-        tSdkImageResolution sRoiResolution = { 0 };
+        tSdkImageResolution sRoiResolution;
+        memset(&sRoiResolution, 0, sizeof(tSdkImageResolution));
         
         // Set to 0xff for custom resolution, set to 0 to N for select preset resolution
         sRoiResolution.iIndex = 0xff;
@@ -269,7 +283,7 @@ namespace op
     }
 
     MindReaderImpl::MindReaderImpl(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
-                    bool undistortImage, int cameraIndex, int cameraTriggerMode, double captureFps)
+                    bool undistortImage, int cameraIndex, int cameraTriggerMode, double& captureFps)
     {
         mCameraIndex = cameraIndex;
         mCameraTriggerMode = cameraTriggerMode;
@@ -279,6 +293,11 @@ namespace op
         if (mCameraParameterPath.back() != '/')
             mCameraParameterPath.append(1, '/');
         mCaptureFps = captureFps;
+        if (mCaptureByCallback && mCameraTriggerMode==1 && captureFps <= 0)
+        {
+            mCaptureFps = 60;
+            captureFps = mCaptureFps;
+        }
 
         try
         {
@@ -408,6 +427,7 @@ namespace op
             mCameraInfos.reserve(mCameraCount);
             mCameraDevInfos.reserve(mCameraCount);
             mCameraHandles.reserve(mCameraCount);
+            videoFrameSorter.reset(new VideoFrameSorter(mCameraCount));
 
             for(int i = 0; i < mCameraCount; i++)
             {
@@ -428,14 +448,14 @@ namespace op
                 CameraGetCapability(cameraHandle, &cameraCapbility);
 
                 std::cout << "Hardware zoom: " << cameraCapbility.sIspCapacity.bZoomHD << std::endl;
-
                 for (int k = 0; k < cameraCapbility.iFrameSpeedDesc; k++)
                 {
                     std::cout << "Camera speed " << cameraCapbility.pFrameSpeedDesc[k].iIndex
                         << ": " << cameraCapbility.pFrameSpeedDesc[k].acDescription << std::endl;
                 }
-                //status = CameraSetFrameSpeed(cameraHandle, 2);
+
                 //status = CameraSetFrameRate(cameraHandle, 40);
+                status = CameraSetFrameSpeed(cameraHandle, 2);
                 if (status != CAMERA_STATUS_SUCCESS)
                 {
                     std::string message = "Failed to set camera frame rate! Error code is "
@@ -453,8 +473,11 @@ namespace op
                 configCameraTrigger(cameraHandle, mCameraTriggerMode);
 
                 // Camera exposure
+                double maxExposureTime = 50;
+                if (mCaptureFps > 0)
+                    maxExposureTime = std::min(maxExposureTime, std::max(10., 1000/mCaptureFps*2/3));
                 CameraSetAeState(cameraHandle, true);
-                CameraSetAeExposureRange(cameraHandle, 50, 1000*20);
+                CameraSetAeExposureRange(cameraHandle, 50, 1000*maxExposureTime);
                 CameraSetAeAnalogGainRange(cameraHandle, 10, 2500);
                 CameraSetAeTarget(cameraHandle, 100);
                 //CameraSetAnalogGain(cameraHandle, 80);
@@ -479,6 +502,14 @@ namespace op
                     height = mResolution.y;
                 }
                 SetCameraResolution(cameraHandle, offsetx, offsety, width, height);
+                /*status = CameraSetImageResolutionEx(cameraHandle, 0xFF, 0, 0, offsetx, offsety,
+                    width, height, mResolution.x, mResolution.y);
+                if (status != CAMERA_STATUS_SUCCESS)
+                {
+                    std::string message = "Failed to set set resolution! Error code is "
+                        + std::to_string(status) + ".";
+                    error(message, __LINE__, __FUNCTION__, __FILE__);
+                }*/
 
                 if (mCaptureByCallback)
                 {
@@ -517,7 +548,7 @@ namespace op
                 mThreadOpened = true;
                 mThread = std::thread{&MindReaderImpl::bufferingThread, this};
             }
-            else if (mCameraTriggerMode == 1 && mCaptureFps > 0)
+            else if (mCameraTriggerMode == 1)
             {
                 mThreadOpened = true;
                 mThread = std::thread{&MindReaderImpl::triggerThread, this};
@@ -631,6 +662,21 @@ namespace op
         else
             cvMat = matImage;
 
+        if (true)
+        {
+            double ms = cv::getTickCount() / cv::getTickFrequency()* 1000;
+            printf("camera %d: %ld, %f, %f, %f\n", cameraIndex, pthread_self(),
+                sFrameInfo.uiTimeStamp/10.0, sFrameInfo.uiExpTime/1000.0, ms);
+            double timestamp = sFrameInfo.uiTimeStamp/10.0;
+            videoFrameSorter->pushFrame(cvMat, cameraIndex, timestamp);
+            std::vector<cv::Mat> cvMats;
+            if (videoFrameSorter->popFrames(cvMats))
+            {
+                std::unique_lock<std::mutex> lock{mBufferMutex};
+                std::swap(mBuffer, cvMats);
+            }
+        }
+        else
         {
             std::unique_lock<std::mutex> lock{mBufferMutex};
             if (mBufMats.empty())
