@@ -109,7 +109,7 @@ void configureWrapper(op::Wrapper& opWrapper)
             op::String(FLAGS_write_video), FLAGS_write_video_fps, FLAGS_write_video_with_audio,
             op::String(FLAGS_write_heatmaps), op::String(FLAGS_write_heatmaps_format), op::String(FLAGS_write_video_3d),
             op::String(FLAGS_write_video_adam), op::String(FLAGS_write_bvh), op::String(FLAGS_udp_host),
-            op::String(FLAGS_udp_port), FLAGS_write_image_mode};
+            op::String(FLAGS_udp_port), FLAGS_write_image_mode, FLAGS_trigger_save_video};
         opWrapper.configure(wrapperStructOutput);
         // GUI (comment or use default argument to disable any visual output)
         const op::WrapperStructGui wrapperStructGui{

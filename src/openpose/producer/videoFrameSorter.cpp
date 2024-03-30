@@ -70,15 +70,15 @@ bool VideoFrameSorter::popFrames(std::vector<cv::Mat>& frames)
         frames.resize(mCameraCount);
         for (int i = 0; i < optPos; i++)
             mFrameDataCache.pop_front();
-        std::cout << "Pop frames:";
+        //std::cout << "Pop frames:";
         for (int i = 0; i < mCameraCount; i++)
         {
             const std::shared_ptr<FrameData>& frameData = mFrameDataCache.front();
-            std::cout << " (" << frameData->mCameraIndex << ", " << (int64_t)round(frameData->mTimestamp) << ")";
+            //std::cout << " (" << frameData->mCameraIndex << ", " << (int64_t)round(frameData->mTimestamp) << ")";
             frames[frameData->mCameraIndex] = frameData->mFrame;
             mFrameDataCache.pop_front();
         }
-        std::cout << std::endl;
+        //std::cout << std::endl;
         return true;
     }
 

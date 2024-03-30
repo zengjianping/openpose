@@ -838,8 +838,9 @@ namespace op
                           __LINE__, __FUNCTION__, __FILE__);
                 // Create video saver worker
                 const auto videoSaver = std::make_shared<VideoSaver>(
-                    wrapperStructOutput.writeVideo.getStdString(), getCvFourcc('M','J','P','G'), originalVideoFps,
-                    (wrapperStructOutput.writeVideoWithAudio ? wrapperStructInput.producerString.getStdString() : ""));
+                    wrapperStructOutput.writeVideo.getStdString(), getCvFourcc('M','P','4','V'), originalVideoFps,
+                    (wrapperStructOutput.writeVideoWithAudio ? wrapperStructInput.producerString.getStdString() : ""),
+                    wrapperStructOutput.triggerSave);
                 outputWs.emplace_back(std::make_shared<WVideoSaver<TDatumsSP>>(videoSaver));
             }
             opLog("", Priority::Low, __LINE__, __FUNCTION__, __FILE__);

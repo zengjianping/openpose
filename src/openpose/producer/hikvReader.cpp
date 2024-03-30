@@ -710,8 +710,8 @@ namespace op
             double ms = cv::getTickCount() / cv::getTickFrequency()* 1000;
             double timestamp = ((uint64_t)sFrameInfo.nDevTimeStampHigh << 32 | (uint64_t)sFrameInfo.nDevTimeStampLow);
             timestamp /= 100000;
-            printf("camera %d: %ld, %f, %ld, %f\n", cameraIndex, pthread_self(), timestamp,
-                sFrameInfo.nHostTimeStamp, ms);
+            //printf("camera %d: %ld, %f, %ld, %f\n", cameraIndex, pthread_self(), timestamp,
+            //    sFrameInfo.nHostTimeStamp, ms);
             videoFrameSorter->pushFrame(cvMat, cameraIndex, sFrameInfo.nHostTimeStamp);
             std::vector<cv::Mat> cvMats;
             if (videoFrameSorter->popFrames(cvMats))

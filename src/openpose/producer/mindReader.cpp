@@ -665,8 +665,8 @@ namespace op
         if (true)
         {
             double ms = cv::getTickCount() / cv::getTickFrequency()* 1000;
-            printf("camera %d: %ld, %f, %f, %f\n", cameraIndex, pthread_self(),
-                sFrameInfo.uiTimeStamp/10.0, sFrameInfo.uiExpTime/1000.0, ms);
+            //printf("camera %d: %ld, %f, %f, %f\n", cameraIndex, pthread_self(),
+            //    sFrameInfo.uiTimeStamp/10.0, sFrameInfo.uiExpTime/1000.0, ms);
             double timestamp = sFrameInfo.uiTimeStamp/10.0;
             videoFrameSorter->pushFrame(cvMat, cameraIndex, timestamp);
             std::vector<cv::Mat> cvMats;

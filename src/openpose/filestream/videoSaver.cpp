@@ -1,6 +1,7 @@
 #include <openpose/filestream/videoSaver.hpp>
 #include <opencv2/highgui/highgui.hpp> // cv::VideoWriter
 #include <openpose/filestream/imageSaver.hpp>
+#include <openpose/filestream/messageIO.hpp>
 #include <openpose/utilities/fileSystem.hpp>
 #include <openpose/utilities/string.hpp>
 #include <openpose/core/ctpl_stl.hpp>
@@ -9,6 +10,22 @@ namespace op
 {
     const auto RANDOM_TEXT = "_r8904530ijyiopf9034jiop4g90j0yh795640h38j";
     const std::string mImageFileExt = "jpg";
+ 
+    double getTimestamp()
+    {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
+    }
+ 
+    struct TimedImage
+    {
+        TimedImage(double timestamp, const std::vector<cv::Mat>& cvMats)
+        {
+            mTimestamp = timestamp;
+            mCvMats = cvMats;
+        }
+        double mTimestamp;
+        std::vector<cv::Mat> mCvMats;
+    };
 
     struct VideoSaver::ImplVideoSaver
     {
@@ -20,10 +37,18 @@ namespace op
         Point<int> mCvSize;
         bool mVideoStarted;
         unsigned long long mImageSaverCounter;
+        unsigned long long mImageFinishCounter;
         cv::VideoWriter mVideoWriter;
         std::unique_ptr<ImageSaver> upImageSaver;
         std::string mTempImageFolder;
         std::shared_ptr<ctpl::thread_pool> mThpoolSaveImage;
+        std::deque<std::shared_ptr<TimedImage>> mImageCache;
+        double mImageCacheTime = 2.0;
+        double mTriggerSaveTime = 3.0;
+        double mTriggerStartTime = 0.0;
+        bool triggerSaving = false;
+        bool mNowSave = true;
+        boost::shared_ptr<DataTransferIF> mMessageReceiver;
 
         ImplVideoSaver(const std::string& videoSaverPath, const int cvFourcc, const double fps,
                        const std::string& addAudioFromThisVideo) :
@@ -31,15 +56,23 @@ namespace op
             mCvFourcc{cvFourcc},
             mFps{fps},
             mAddAudioFromThisVideo{addAudioFromThisVideo},
-            mUseFfmpeg{toLower(getFileExtension(videoSaverPath)) == "mp4"},
+            //mUseFfmpeg{toLower(getFileExtension(videoSaverPath)) == "mp4"},
+            mUseFfmpeg{false},
             mVideoStarted{false},
-            mImageSaverCounter{0ull}
+            mImageSaverCounter{0ull},
+            mImageFinishCounter{0ull}
         {
             try
             {
                 if (mUseFfmpeg)
                     mTempImageFolder = getFullFilePathNoExtension(mVideoSaverPath) + RANDOM_TEXT;
-                mThpoolSaveImage.reset(new ctpl::thread_pool(4, 0));
+                mThpoolSaveImage.reset(new ctpl::thread_pool(1, 0));
+
+                DataTransferIF::Option option;
+                option.type_name = "udp";
+                option.udp.ip_address = "127.0.0.1";
+                option.udp.port_num = 18000;
+                mMessageReceiver = DataTransferIF::CreateInstance(option, true);
             }
             catch (const std::exception& e)
             {
@@ -78,11 +111,16 @@ namespace op
     }
 
     VideoSaver::VideoSaver(const std::string& videoSaverPath, const int cvFourcc, const double fps,
-                           const std::string& addAudioFromThisVideo) :
+                           const std::string& addAudioFromThisVideo, bool triggerSave) :
         upImpl{new ImplVideoSaver{videoSaverPath, cvFourcc, fps, addAudioFromThisVideo}}
     {
         try
         {
+            if (triggerSave)
+            {
+                upImpl->mNowSave = false;
+            }
+
             // Sanity checks
             if (fps <= 0.)
                 error("Desired fps (frame rate) to save the video is <= 0.", __LINE__, __FUNCTION__, __FILE__);
@@ -208,28 +246,71 @@ namespace op
             // Open video (1st frame)
             // Done here and not in the constructor to handle cases where the resolution is not known (e.g.,
             // reading images or multiple cameras)
-            if (!upImpl->mVideoStarted)
-            {
-                upImpl->mVideoStarted = true;
-                const auto cvSize = cvMats.at(0).size();
-                upImpl->mCvSize = Point<int>{(int)cvMats.size()*cvSize.width, cvSize.height};
-                // FFmpeg video
-                if (upImpl->mUseFfmpeg)
-                {
-                    opLog("Temporarily saving video frames as JPG images in: " + upImpl->mTempImageFolder,
-                        op::Priority::High);
-                    upImpl->upImageSaver.reset(new ImageSaver{upImpl->mTempImageFolder, mImageFileExt});
-                }
-                // OpenCV video
-                else
-                    upImpl->mVideoWriter = openVideo(
-                        upImpl->mVideoSaverPath, upImpl->mCvFourcc, upImpl->mFps, upImpl->mCvSize);
-            }
-            // Sanity check
-            if (!isOpened())
-                error("Video to write frames is not opened.", __LINE__, __FUNCTION__, __FILE__);
 
-            auto process = [this, cvMats](int id, unsigned long long counter) -> void
+            bool triggerSaveCmd = false;
+            uint8_t buffer[1024];
+            int byte_num = upImpl->mMessageReceiver->Read(buffer, 1023);
+            if (byte_num > 0)
+            {
+                buffer[byte_num] = 0;
+                std::cout << "Receive command: " << (char*)(&buffer[0]) << std::endl;
+                if (strcmp((char*)(&buffer[0]), "save") == 0)
+                    triggerSaveCmd = true;
+            }
+
+            double timestamp = getTimestamp();
+            if (triggerSaveCmd)
+            {
+                upImpl->mTriggerStartTime = timestamp;
+                upImpl->triggerSaving = true;
+                upImpl->mNowSave = true;
+            }
+            else if (upImpl->triggerSaving)
+            {
+                if (upImpl->mTriggerStartTime + upImpl->mTriggerSaveTime < timestamp)
+                {
+                    upImpl->triggerSaving = false;
+                    upImpl->mNowSave = false;
+                }
+            }
+
+            if (upImpl->mNowSave)
+            {
+                if (!upImpl->mVideoStarted)
+                {
+                    upImpl->mVideoStarted = true;
+                    const auto cvSize = cvMats.at(0).size();
+                    upImpl->mCvSize = Point<int>{(int)cvMats.size()*cvSize.width, cvSize.height};
+                    // FFmpeg video
+                    if (upImpl->mUseFfmpeg)
+                    {
+                        opLog("Temporarily saving video frames as JPG images in: " + upImpl->mTempImageFolder,
+                            op::Priority::High);
+                        upImpl->upImageSaver.reset(new ImageSaver{upImpl->mTempImageFolder, mImageFileExt});
+                    }
+                    // OpenCV video
+                    else
+                        upImpl->mVideoWriter = openVideo(
+                            upImpl->mVideoSaverPath, upImpl->mCvFourcc, upImpl->mFps, upImpl->mCvSize);
+                }
+                // Sanity check
+                if (!isOpened())
+                    error("Video to write frames is not opened.", __LINE__, __FUNCTION__, __FILE__);
+            }
+            else
+            {
+                if (upImpl->mVideoStarted)
+                {
+                    if (upImpl->mImageFinishCounter == upImpl->mImageSaverCounter)
+                    {
+                        upImpl->mVideoWriter.release();
+                        upImpl->mVideoStarted = false;
+                        printf("Finished saving video!\n");
+                    }
+                }
+            }
+
+            auto process = [this](int id, unsigned long long counter, std::vector<cv::Mat> cvMats) -> void
             {
                 // Concat images
                 cv::Mat cvOutputData;
@@ -252,13 +333,27 @@ namespace op
                 // OpenCV video
                 else
                     upImpl->mVideoWriter.write(cvOutputData);
+                upImpl->mImageFinishCounter++;
             };
 
-            if (true)
-                upImpl->mThpoolSaveImage->push(std::string(), process, upImpl->mImageSaverCounter);
-            else
-                process(0, upImpl->mImageSaverCounter);
-            upImpl->mImageSaverCounter++;
+            auto timedImage = std::make_shared<TimedImage>(timestamp,cvMats);
+            upImpl->mImageCache.push_back(timedImage);
+            while (upImpl->mImageCache.front()->mTimestamp + upImpl->mImageCacheTime < timestamp)
+                upImpl->mImageCache.pop_front();
+
+            if (upImpl->mNowSave)
+            {
+                while (!upImpl->mImageCache.empty())
+                {
+                    auto cvMats = upImpl->mImageCache.front()->mCvMats;
+                    if (true)
+                        upImpl->mThpoolSaveImage->push(std::string(), process, upImpl->mImageSaverCounter, cvMats);
+                    else
+                        process(0, upImpl->mImageSaverCounter, cvMats);
+                    upImpl->mImageSaverCounter++;
+                    upImpl->mImageCache.pop_front();
+                }
+            }
         }
         catch (const std::exception& e)
         {
