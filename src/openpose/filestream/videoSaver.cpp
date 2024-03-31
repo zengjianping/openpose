@@ -5,6 +5,8 @@
 #include <openpose/utilities/fileSystem.hpp>
 #include <openpose/utilities/string.hpp>
 #include <openpose/core/ctpl_stl.hpp>
+#include <fstream>
+
 
 namespace op
 {
@@ -305,6 +307,15 @@ namespace op
                     {
                         upImpl->mVideoWriter.release();
                         upImpl->mVideoStarted = false;
+                        upImpl->mImageFinishCounter = 0;
+                        upImpl->mImageSaverCounter = 0;
+
+                        std::string videoDir = getFileParentFolderPath(upImpl->mVideoSaverPath);
+                        std::string videoName = getFileNameAndExtension(upImpl->mVideoSaverPath);
+                        std::string flagFile = videoDir + "/_CAPTURE_SUCCESS";
+                        std::ofstream ofs(flagFile);
+                        ofs << videoName; ofs.close();
+
                         printf("Finished saving video!\n");
                     }
                 }
