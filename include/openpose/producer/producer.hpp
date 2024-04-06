@@ -184,7 +184,8 @@ namespace op
         const ProducerType producerType = ProducerType::None, const std::string& producerString = "",
         const Point<int>& cameraResolution = Point<int>{-1,-1},
         const std::string& cameraParameterPath = "models/cameraParameters/", const bool undistortImage = true,
-        const int numberViews = -1, const int cameraTriggerMode = 0, const double captureFps = -1);
+        const int numberViews = -1, const int cameraTriggerMode = 0, const double captureFps = -1,
+        const bool cropImage = false);
 }
 
 #endif // OPENPOSE_PRODUCER_PRODUCER_HPP

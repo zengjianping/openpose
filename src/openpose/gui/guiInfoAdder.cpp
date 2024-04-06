@@ -163,9 +163,12 @@ namespace op
             putTextOnCvMat(cvOutputData, "Frame: " + std::to_string(frameNumber),
                            {borderMargin, (int)(cvOutputData.rows - borderMargin)}, WHITE_SCALAR, false, cvOutputData.cols);
             // Number people
-            putTextOnCvMat(cvOutputData, "People: " + std::to_string(numberPeople),
-                           {(int)(cvOutputData.cols - borderMargin), (int)(cvOutputData.rows - borderMargin)},
-                           WHITE_SCALAR, true, cvOutputData.cols);
+            if (numberPeople > 0)
+            {
+                putTextOnCvMat(cvOutputData, "People: " + std::to_string(numberPeople),
+                            {(int)(cvOutputData.cols - borderMargin), (int)(cvOutputData.rows - borderMargin)},
+                            WHITE_SCALAR, true, cvOutputData.cols);
+            }
         }
         catch (const std::exception& e)
         {

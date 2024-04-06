@@ -20,7 +20,7 @@ namespace op
          * cameraIndex = -1 means that all cameras are taken
          */
         explicit MindReaderImpl(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
-                    bool undistortImage, int cameraIndex, int cameraTriggerMode, double& captureFps);
+                    bool undistortImage, int cameraIndex, int cameraTriggerMode, double& captureFps, bool cropImage);
         virtual ~MindReaderImpl();
 
     public:
@@ -47,7 +47,7 @@ namespace op
     protected:
         bool mInitialized = false;
         int mCameraCount = 0;
-        int mCameraIndex = -1;
+        std::vector<int> mCameraIndice;
         int mCameraTriggerMode = 0;
         double mCaptureFps = -1;
         bool mZoomAfterCapture = false;
@@ -283,9 +283,14 @@ namespace op
     }
 
     MindReaderImpl::MindReaderImpl(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
-                    bool undistortImage, int cameraIndex, int cameraTriggerMode, double& captureFps)
+                    bool undistortImage, int cameraIndex, int cameraTriggerMode, double& captureFps, bool cropImage)
     {
-        mCameraIndex = cameraIndex;
+        for (int i = 0; i < 32; i++)
+        {
+            if ((cameraIndex >> i) & 1)
+                mCameraIndice.push_back(i);
+        }
+        mZoomAfterCapture = !cropImage;
         mCameraTriggerMode = cameraTriggerMode;
         mUndistortImage = undistortImage;
         mResolution = cameraResolution;
@@ -375,29 +380,37 @@ namespace op
             {
                 error("No cameras detected.", __LINE__, __FUNCTION__, __FILE__);
             }
-            else if (mCameraIndex >= cameraCount)
+            /*else if (mCameraIndice.size() > (size_t)cameraCount)
             {
                 std::string message = "Number of cameras detected is " + std::to_string(cameraCount)
-                    + ", and camera index " + std::to_string(mCameraIndex) + " is too big!";
+                    + ", and camera index is too big!";
                 error(message, __LINE__, __FUNCTION__, __FILE__);
-            }
+            }*/
             std::sort(&cameraList[0], &cameraList[cameraCount], [](tSdkCameraDevInfo& a, tSdkCameraDevInfo& b)
                                                                 {return strcmp(a.acSn, b.acSn) <= 0;});
 
             opLog("Number of cameras detected: " + std::to_string(cameraCount), Priority::High);
-            if (mCameraIndex >= 0)
+
+            mCameraCount = 0;
+            if (mCameraIndice.size() > (size_t)cameraCount)
+                mCameraIndice.resize(cameraCount);
+
+            if (mCameraIndice.size() > 0)
             {
-                opLog("Only use camera " + std::to_string(mCameraIndex) + ".");
-                if (mCameraIndex > 0)
+                std::cout << "Using cameras: " << cv::Mat(mCameraIndice) << std::endl;
+                for (size_t i = 0; i < mCameraIndice.size(); i++)
                 {
-                    cameraList[0] = cameraList[mCameraIndex];
+                    if (mCameraIndice[i] < cameraCount)
+                    {
+                        cameraList[i] = cameraList[mCameraIndice[i]];
+                        mCameraCount += 1;
+                    }
                 }
-                mCameraCount = 1;
             }
-            else
+            if (mCameraCount == 0)
             {
-                opLog("Use all cameras.");
-                mCameraCount = cameraCount;
+                std::string message = "No camera selected!";
+                error(message, __LINE__, __FUNCTION__, __FILE__);
             }
 
             // Print camera information
@@ -1004,14 +1017,14 @@ namespace op
 
 
     MindReader::MindReader(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
-            bool undistortImage, int cameraIndex, int cameraTriggerMode, double captureFps) :
+            bool undistortImage, int cameraIndex, int cameraTriggerMode, double captureFps, bool cropImage) :
         Producer{ProducerType::MindCamera, cameraParameterPath, undistortImage, -1},
         mFrameNameCounter{0ull}
     {
         try
         {
             upImpl = std::make_shared<MindReaderImpl>(cameraParameterPath, cameraResolution,
-                undistortImage, cameraIndex, cameraTriggerMode, captureFps);
+                undistortImage, cameraIndex, cameraTriggerMode, captureFps, cropImage);
             // Get resolution
             const auto resolution = upImpl->getResolution();
             // Set resolution

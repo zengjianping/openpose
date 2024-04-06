@@ -10,7 +10,8 @@ namespace op
     public:
         VideoSaver(
             const std::string& videoSaverPath, const int cvFourcc, const double fps,
-            const std::string& addAudioFromThisVideo = "", bool triggerSave = false);
+            const std::string& addAudioFromThisVideo = "", bool triggerSave = false,
+            double imageCacheTime = 2.0, double triggerSaveTime = 3.0);
 
         virtual ~VideoSaver();
 

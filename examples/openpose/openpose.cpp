@@ -99,7 +99,7 @@ void configureWrapper(op::Wrapper& opWrapper)
             producerType, producerString, FLAGS_frame_first, FLAGS_frame_step, FLAGS_frame_last,
             FLAGS_process_real_time, FLAGS_frame_flip, FLAGS_frame_rotate, FLAGS_frames_repeat,
             cameraSize, op::String(FLAGS_camera_parameter_path), FLAGS_frame_undistort, FLAGS_3d_views,
-            FLAGS_camera_trigger_mode, FLAGS_capture_fps, FLAGS_batch_process};
+            FLAGS_camera_trigger_mode, FLAGS_capture_fps, FLAGS_batch_process, FLAGS_crop_image};
         opWrapper.configure(wrapperStructInput);
         // Output (comment or use default argument to disable any output)
         const op::WrapperStructOutput wrapperStructOutput{
@@ -109,7 +109,8 @@ void configureWrapper(op::Wrapper& opWrapper)
             op::String(FLAGS_write_video), FLAGS_write_video_fps, FLAGS_write_video_with_audio,
             op::String(FLAGS_write_heatmaps), op::String(FLAGS_write_heatmaps_format), op::String(FLAGS_write_video_3d),
             op::String(FLAGS_write_video_adam), op::String(FLAGS_write_bvh), op::String(FLAGS_udp_host),
-            op::String(FLAGS_udp_port), FLAGS_write_image_mode, FLAGS_trigger_save_video};
+            op::String(FLAGS_udp_port), FLAGS_write_image_mode, FLAGS_trigger_save_video, FLAGS_image_cache_time,
+            FLAGS_trigger_save_time};
         opWrapper.configure(wrapperStructOutput);
         // GUI (comment or use default argument to disable any visual output)
         const op::WrapperStructGui wrapperStructGui{

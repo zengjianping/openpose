@@ -9,7 +9,8 @@ namespace op
         const String& writeVideo_, const double writeVideoFps_, const bool writeVideoWithAudio_,
         const String& writeHeatMaps_, const String& writeHeatMapsFormat_, const String& writeVideo3D_,
         const String& writeVideoAdam_, const String& writeBvh_, const String& udpHost_,
-        const String& udpPort_, const int writeImageMode_, bool triggerSave_) :
+        const String& udpPort_, const int writeImageMode_, bool triggerSave_, double imageCacheTime_,
+        double triggerSaveTime_) :
         verbose{verbose_},
         writeKeypoint{writeKeypoint_},
         writeKeypointFormat{writeKeypointFormat_},
@@ -30,7 +31,9 @@ namespace op
         udpHost{udpHost_},
         udpPort{udpPort_},
         writeImageMode{writeImageMode_},
-        triggerSave(triggerSave_)
+        triggerSave(triggerSave_),
+        imageCacheTime(imageCacheTime_),
+        triggerSaveTime(triggerSaveTime_)
     {
         try
         {

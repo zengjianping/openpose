@@ -144,6 +144,8 @@ namespace op
 
         int writeImageMode;
         bool triggerSave;
+        double imageCacheTime;
+        double triggerSaveTime;
 
         /**
          * Constructor of the struct.
@@ -160,7 +162,8 @@ namespace op
             const String& writeHeatMaps = "", const String& writeHeatMapsFormat = "png",
             const String& writeVideo3D = "", const String& writeVideoAdam = "",
             const String& writeBvh = "", const String& udpHost = "",
-            const String& udpPort = "8051", const int writeImageMode = 0, bool triggerSave = false);
+            const String& udpPort = "8051", const int writeImageMode = 0,
+            bool triggerSave = false, double imageCacheTime = 2.0, double triggerSaveTime = 3.0);
     };
 }
 

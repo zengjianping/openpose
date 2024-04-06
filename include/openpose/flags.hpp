@@ -39,6 +39,7 @@ DEFINE_string(video,                    "",             "Use a video file instea
                                                         " example video.");
 DEFINE_string(image_dir,                "",             "Process a directory of images. Use `examples/media/` for our default example folder with 20"
                                                         " images. Read all standard formats (jpg, png, bmp, etc.).");
+DEFINE_bool(crop_image,                 false,          "");
 DEFINE_bool(flir_camera,                false,          "Whether to use FLIR (Point-Grey) stereo camera.");
 DEFINE_int32(flir_camera_index,         -1,             "Select -1 (default) to run on all detected flir cameras at once. Otherwise, select the flir"
                                                         " camera index to run, where 0 corresponds to the detected flir camera with the lowest"
@@ -248,6 +249,8 @@ DEFINE_string(write_images_format,      "png",          "File extension and form
                                                         " function cv::imwrite for all compatible extensions.");
 DEFINE_int32(write_image_mode,          0,              "");
 DEFINE_bool(trigger_save_video,         false,          "");
+DEFINE_double(image_cache_time,         2,              "");
+DEFINE_double(trigger_save_time,        3,              "");
 DEFINE_string(write_video,              "",             "Full file path to write rendered frames in motion JPEG video format. It might fail if the"
                                                         " final path does not finish in `.avi`. It internally uses cv::VideoWriter. Flag"
                                                         " `write_video_fps` controls FPS. Alternatively, the video extension can be `.mp4`,"

@@ -20,7 +20,7 @@ namespace op
          * cameraIndex = -1 means that all cameras are taken
          */
         explicit HikvReaderImpl(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
-                    bool undistortImage, int cameraIndex, int cameraTriggerMode, double& captureFps);
+                    bool undistortImage, int cameraIndex, int cameraTriggerMode, double& captureFps, bool cropImage);
         virtual ~HikvReaderImpl();
 
     public:
@@ -47,9 +47,10 @@ namespace op
     protected:
         bool mInitialized = false;
         int mCameraCount = 0;
-        int mCameraIndex = -1;
+        std::vector<int> mCameraIndice;
         int mCameraTriggerMode = 0;
         double mCaptureFps = -1;
+        bool mCropImage = false;
         bool mZoomAfterCapture = true;
         bool mCaptureByCallback = true;
         Point<int> mResolution;
@@ -204,15 +205,20 @@ namespace op
     }
 
     HikvReaderImpl::HikvReaderImpl(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
-                    bool undistortImage, int cameraIndex, int cameraTriggerMode, double& captureFps)
+            bool undistortImage, int cameraIndex, int cameraTriggerMode, double& captureFps, bool cropImage)
     {
-        mCameraIndex = cameraIndex;
+        for (int i = 0; i < 32; i++)
+        {
+            if ((cameraIndex >> i) & 1)
+                mCameraIndice.push_back(i);
+        }
         mCameraTriggerMode = cameraTriggerMode;
         mUndistortImage = undistortImage;
         mResolution = cameraResolution;
         mCameraParameterPath = cameraParameterPath;
         if (mCameraParameterPath.back() != '/')
             mCameraParameterPath.append(1, '/');
+        mCropImage = cropImage;
         mCaptureFps = captureFps;
         if (mCaptureByCallback && mCameraTriggerMode==1 && captureFps <= 0)
         {
@@ -298,12 +304,12 @@ namespace op
             {
                 error("No cameras detected.", __LINE__, __FUNCTION__, __FILE__);
             }
-            else if (mCameraIndex >= cameraCount)
+            /*else if (mCameraIndex >= cameraCount)
             {
                 std::string message = "Number of cameras detected is " + std::to_string(cameraCount)
                     + ", and camera index " + std::to_string(mCameraIndex) + " is too big!";
                 error(message, __LINE__, __FUNCTION__, __FILE__);
-            }
+            }*/
 
             MV_CC_DEVICE_INFO* pDeviceInfo[MV_MAX_DEVICE_NUM] = {0};
             for (int i = 0; i < cameraCount; i++)
@@ -314,7 +320,29 @@ namespace op
                                    (char*)&b->SpecialInfo.stUsb3VInfo.chSerialNumber[0]) <= 0;});
 
             opLog("Number of cameras detected: " + std::to_string(cameraCount), Priority::High);
-            if (mCameraIndex >= 0)
+
+            mCameraCount = 0;
+            if (mCameraIndice.size() > (size_t)cameraCount)
+                mCameraIndice.resize(cameraCount);
+
+            if (mCameraIndice.size() > 0)
+            {
+                std::cout << "Using cameras: " << cv::Mat(mCameraIndice) << std::endl;
+                for (size_t i = 0; i < mCameraIndice.size(); i++)
+                {
+                    if (mCameraIndice[i] < cameraCount)
+                    {
+                        pDeviceInfo[i] = pDeviceInfo[mCameraIndice[i]];
+                        mCameraCount += 1;
+                    }
+                }
+            }
+            if (mCameraCount == 0)
+            {
+                std::string message = "No camera selected!";
+                error(message, __LINE__, __FUNCTION__, __FILE__);
+            }
+            /*if (mCameraIndex >= 0)
             {
                 opLog("Only use camera " + std::to_string(mCameraIndex) + ".");
                 if (mCameraIndex > 0)
@@ -327,7 +355,7 @@ namespace op
             {
                 opLog("Use all cameras.");
                 mCameraCount = cameraCount;
-            }
+            }*/
 
             // Print camera information
             opLog("*** Camera device information ***", Priority::High);
@@ -701,7 +729,14 @@ namespace op
 
         cv::Mat cvMat;
         if (imgWidth != mResolution.x || imgHeight != mResolution.y)
-            cv::resize(matImage, cvMat, cv::Size(mResolution.x, mResolution.y));
+            if (mCropImage)
+            {
+                int x = (imgWidth - mResolution.x) / 2;
+                int y = (imgHeight - mResolution.y) / 2;
+                matImage(cv::Rect(x,y,mResolution.x,mResolution.y)).copyTo(cvMat);
+            }
+            else
+                cv::resize(matImage, cvMat, cv::Size(mResolution.x, mResolution.y));
         else
             cvMat = matImage;
 
@@ -1094,14 +1129,14 @@ namespace op
 
 
     HikvReader::HikvReader(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
-            bool undistortImage, int cameraIndex, int cameraTriggerMode, double captureFps) :
+            bool undistortImage, int cameraIndex, int cameraTriggerMode, double captureFps, bool cropImage) :
         Producer{ProducerType::HikvCamera, cameraParameterPath, undistortImage, -1},
         mFrameNameCounter{0ull}
     {
         try
         {
             upImpl = std::make_shared<HikvReaderImpl>(cameraParameterPath, cameraResolution,
-                undistortImage, cameraIndex, cameraTriggerMode, captureFps);
+                undistortImage, cameraIndex, cameraTriggerMode, captureFps, cropImage);
             // Get resolution
             const auto resolution = upImpl->getResolution();
             // Set resolution

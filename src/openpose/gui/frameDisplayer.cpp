@@ -142,7 +142,7 @@ namespace op
                     const cv::Mat framesI = OP_OP2CVCONSTMAT(frames[row*2+col]);
                     framesI.copyTo(cvMat(cv::Rect(width*col, height*row, width, height)));
                 }
-                cv::resize(cvMat, cvMat, cv::Size(width,height/2));
+                //cv::resize(cvMat, cvMat, cv::Size(width,height/2));
                 Matrix opMat = OP_CV2OPMAT(cvMat);
                 displayFrame(opMat, waitKeyValue);
             }

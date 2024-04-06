@@ -413,7 +413,7 @@ namespace op
     std::shared_ptr<Producer> createProducer(
         const ProducerType producerType, const std::string& producerString, const Point<int>& cameraResolution,
         const std::string& cameraParameterPath, const bool undistortImage, const int numberViews,
-        const int cameraTriggerMode, const double captureFps)
+        const int cameraTriggerMode, const double captureFps, const bool cropImage)
     {
         try
         {
@@ -437,11 +437,11 @@ namespace op
             // MindVision camera
             else if (producerType == ProducerType::MindCamera)
                 return std::make_shared<MindReader>(cameraParameterPath, cameraResolution, undistortImage,
-                    std::stoi(producerString), cameraTriggerMode, captureFps);
+                    std::stoi(producerString), cameraTriggerMode, captureFps, cropImage);
             // HikVision camera
             else if (producerType == ProducerType::HikvCamera)
                 return std::make_shared<HikvReader>(cameraParameterPath, cameraResolution, undistortImage,
-                    std::stoi(producerString), cameraTriggerMode, captureFps);
+                    std::stoi(producerString), cameraTriggerMode, captureFps, cropImage);
             // Webcam
             else if (producerType == ProducerType::Webcam)
             {

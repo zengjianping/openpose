@@ -53,7 +53,8 @@ namespace op
         boost::shared_ptr<DataTransferIF> mMessageReceiver;
 
         ImplVideoSaver(const std::string& videoSaverPath, const int cvFourcc, const double fps,
-                       const std::string& addAudioFromThisVideo) :
+                       const std::string& addAudioFromThisVideo, double imageCacheTime=2.0,
+                       double triggerSaveTime=3.0) :
             mVideoSaverPath{videoSaverPath},
             mCvFourcc{cvFourcc},
             mFps{fps},
@@ -66,6 +67,9 @@ namespace op
         {
             try
             {
+                mImageCacheTime = imageCacheTime;
+                mTriggerSaveTime = triggerSaveTime;
+        
                 if (mUseFfmpeg)
                     mTempImageFolder = getFullFilePathNoExtension(mVideoSaverPath) + RANDOM_TEXT;
                 mThpoolSaveImage.reset(new ctpl::thread_pool(1, 0));
@@ -113,13 +117,15 @@ namespace op
     }
 
     VideoSaver::VideoSaver(const std::string& videoSaverPath, const int cvFourcc, const double fps,
-                           const std::string& addAudioFromThisVideo, bool triggerSave) :
-        upImpl{new ImplVideoSaver{videoSaverPath, cvFourcc, fps, addAudioFromThisVideo}}
+                           const std::string& addAudioFromThisVideo, bool triggerSave,
+                           double imageCacheTime, double triggerSaveTime) :
+        upImpl(new ImplVideoSaver(videoSaverPath, cvFourcc, fps, addAudioFromThisVideo, imageCacheTime, triggerSaveTime))
     {
         try
         {
             if (triggerSave)
             {
+                printf("Start trigger saving video: %f, %f\n", imageCacheTime, triggerSaveTime);
                 upImpl->mNowSave = false;
             }
 

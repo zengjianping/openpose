@@ -113,7 +113,8 @@ namespace op
                 wrapperStructInput.producerType, wrapperStructInput.producerString.getStdString(),
                 wrapperStructInput.cameraResolution, wrapperStructInput.cameraParameterPath.getStdString(),
                 wrapperStructInput.undistortImage, wrapperStructInput.numberViews,
-                wrapperStructInput.cameraTriggerMode, wrapperStructInput.captureFps);
+                wrapperStructInput.cameraTriggerMode, wrapperStructInput.captureFps,
+                wrapperStructInput.cropImage);
 
             // Editable arguments
             auto wrapperStructPose = wrapperStructPoseTemp;
@@ -840,7 +841,7 @@ namespace op
                 const auto videoSaver = std::make_shared<VideoSaver>(
                     wrapperStructOutput.writeVideo.getStdString(), getCvFourcc('M','P','4','V'), originalVideoFps,
                     (wrapperStructOutput.writeVideoWithAudio ? wrapperStructInput.producerString.getStdString() : ""),
-                    wrapperStructOutput.triggerSave);
+                    wrapperStructOutput.triggerSave, wrapperStructOutput.imageCacheTime, wrapperStructOutput.triggerSaveTime);
                 outputWs.emplace_back(std::make_shared<WVideoSaver<TDatumsSP>>(videoSaver));
             }
             opLog("", Priority::Low, __LINE__, __FUNCTION__, __FILE__);
