@@ -3,7 +3,7 @@
 ./build/examples/openpose/openpose.bin \
     --video datas/pose_tests/panoptic/dance2a/videos/ \
     --model_pose BODY_25 --batch_process \
-    --body 1 --num_gpu 0 --net_resolution -1x192
+    --body 1 --num_gpu 1 --net_resolution -1x192
 
 #    --mind_camera --mind_camera_index -1 --camera_trigger_mode 1 \
 #    --body 1 --num_gpu 1 --camera_resolution "1224x1024" --capture_fps 5

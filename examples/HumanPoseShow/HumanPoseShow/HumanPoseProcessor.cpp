@@ -550,9 +550,14 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
 
         std::string strTime  = formatTimeString();
         if (params.outputParams.saveImage && !params.outputParams.imageSavePath.empty()) {
-            std::string strSubDir = strTime;
             std::string strDir = op::formatAsDirectory(params.outputParams.imageSavePath);
-            write_images = strDir + strSubDir;
+            if (params.outputParams.notUseTime) {
+                write_images = strDir;
+            }
+            else {
+                std::string strSubDir = strTime;
+                write_images = strDir + strSubDir;
+            }
             op::makeDirectory(write_images);
         }
         if (params.outputParams.saveVideo && !params.outputParams.videoSavePath.empty()) {

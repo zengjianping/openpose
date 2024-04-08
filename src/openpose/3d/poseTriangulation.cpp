@@ -137,7 +137,7 @@ namespace op
                             keypoints3D[baseIndex + 1] = xyzPoints[index].y;
                             keypoints3D[baseIndex + 2] = xyzPoints[index].z;
                             keypoints3D[baseIndex + 3] = 1.f;
-                            std::cout << "Pose: " << keypoints3D << std::endl;
+                            //std::cout << "Pose: " << keypoints3D << std::endl;
                             atLeastOnePointProjected = true;
                         }
                     }

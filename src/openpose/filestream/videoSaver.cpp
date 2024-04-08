@@ -77,7 +77,7 @@ namespace op
                 DataTransferIF::Option option;
                 option.type_name = "udp";
                 option.udp.ip_address = "127.0.0.1";
-                option.udp.port_num = 18000;
+                option.udp.port_num = 18081;
                 mMessageReceiver = DataTransferIF::CreateInstance(option, true);
             }
             catch (const std::exception& e)
@@ -256,30 +256,33 @@ namespace op
             // reading images or multiple cameras)
 
             bool triggerSaveCmd = false;
-            uint8_t buffer[1024];
-            int byte_num = upImpl->mMessageReceiver->Read(buffer, 1023);
+            const int buffsz = 1024 * 32;
+            uint8_t buffer[buffsz];
+            int byte_num = upImpl->mMessageReceiver->Read(buffer, buffsz-1);
             if (byte_num > 0)
             {
                 buffer[byte_num] = 0;
-                std::cout << "Receive command: " << (char*)(&buffer[0]) << std::endl;
-                if (strcmp((char*)(&buffer[0]), "save") == 0)
+                std::string message((char*)(&buffer[0]));
+                std::cout << "Received message: " << message << std::endl;
+                //if (strcmp((char*)(&buffer[0]), "save") == 0)
+                if (message.find("ShortID") >= 0)
                     triggerSaveCmd = true;
             }
 
             double timestamp = getTimestamp();
-            if (triggerSaveCmd)
-            {
-                upImpl->mTriggerStartTime = timestamp;
-                upImpl->triggerSaving = true;
-                upImpl->mNowSave = true;
-            }
-            else if (upImpl->triggerSaving)
+            if (upImpl->triggerSaving)
             {
                 if (upImpl->mTriggerStartTime + upImpl->mTriggerSaveTime < timestamp)
                 {
                     upImpl->triggerSaving = false;
                     upImpl->mNowSave = false;
                 }
+            }
+            else if (triggerSaveCmd)
+            {
+                upImpl->mTriggerStartTime = timestamp;
+                upImpl->triggerSaving = true;
+                upImpl->mNowSave = true;
             }
 
             if (upImpl->mNowSave)

@@ -498,7 +498,7 @@ void MainWindow::createDockWindows()
     dock->setWidget(widgetPoseRender);
     addDockWidget(Qt::RightDockWidgetArea, dock);
     viewMenu->addAction(dock->toggleViewAction());
-    dock->setMinimumSize(QSize(640,640));
+    dock->setMinimumSize(QSize(400,400));
     
     dock = new QDockWidget(tr("3D姿态数据"), this);
     paragraphsList = new QListWidget(dock);

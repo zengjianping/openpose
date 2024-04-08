@@ -38,6 +38,7 @@ struct HumanPoseParams
 
     struct OutputParams
     {
+        bool notUseTime = false;
         bool saveImage = false;
         std::string imageSavePath = "";
         bool saveVideo = false;
