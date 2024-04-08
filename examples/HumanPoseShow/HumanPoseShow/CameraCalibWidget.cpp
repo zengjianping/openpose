@@ -144,8 +144,17 @@ void CameraCalibWidget::on_buttonExtStartCapture_clicked()
         params.outputParams.notUseTime = true;
         std::string calibPath = params.inputParams.cameraParamPath;
         QDir calibDir(QString::fromStdString(calibPath));
-        calibDir.mkdir("extrinsics");
-        params.outputParams.imageSavePath = calibPath + "/extrinsics";
+        bool calibratePose = ui->checkCameraPose->isChecked();
+        if (calibratePose)
+        {
+            calibDir.mkdir("camerapose");
+            params.outputParams.imageSavePath = calibPath + "/camerapose";
+        }
+        else
+        {
+            calibDir.mkdir("extrinsics");
+            params.outputParams.imageSavePath = calibPath + "/extrinsics";
+        }
         humanPoseProcessor->start(params);
         emit processStatusChanged();
         unsetCursor();
@@ -177,7 +186,17 @@ void CameraCalibWidget::on_buttonExtStartCalibrate_clicked()
             std::string calibrateDir = params.inputParams.cameraParamPath;
             std::string gridLayout = ui->editChessGridLayout->text().toStdString();
             float gridSize = ui->editChessGridSize->text().toDouble();
-            bool res = calibrateCameraExtrinsics(cameraNames, calibrateDir, gridLayout, gridSize);
+            bool calibratePose = ui->checkCameraPose->isChecked();
+            bool res = false;
+
+            if (calibratePose)
+            {
+                res = calibrateCameraPose(cameraNames, calibrateDir, gridLayout, gridSize);
+            }
+            else
+            {
+                res = calibrateCameraExtrinsics(cameraNames, calibrateDir, gridLayout, gridSize);
+            }
 
             unsetCursor();
             if (res)

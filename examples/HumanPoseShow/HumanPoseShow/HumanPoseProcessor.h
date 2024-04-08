@@ -99,6 +99,8 @@ bool calibrateCameraIntrinsics(const std::vector<std::string>& cameraNames,
     const std::string& calibrateDir, const std::string& gridLayout, float gridSize);
 bool calibrateCameraExtrinsics(const std::vector<std::string>& cameraNames,
     const std::string& calibrateDir, const std::string& gridLayout, float gridSize);
+bool calibrateCameraPose(const std::vector<std::string>& cameraNames,
+    const std::string& calibrateDir, const std::string& gridLayout, float gridSize);
 
 
 #endif // HUMAN_POSE_PROCESSOR_H_

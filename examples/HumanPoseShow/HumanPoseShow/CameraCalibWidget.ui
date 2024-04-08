@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>454</width>
-    <height>500</height>
+    <width>472</width>
+    <height>530</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -187,7 +187,7 @@
      <x>10</x>
      <y>390</y>
      <width>421</width>
-     <height>81</height>
+     <height>111</height>
     </rect>
    </property>
    <property name="title">
@@ -243,6 +243,19 @@
       </widget>
      </item>
     </layout>
+   </widget>
+   <widget class="QCheckBox" name="checkCameraPose">
+    <property name="geometry">
+     <rect>
+      <x>270</x>
+      <y>70</y>
+      <width>121</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>相机姿态模式</string>
+    </property>
    </widget>
   </widget>
   <widget class="QGroupBox" name="groupBox_4">

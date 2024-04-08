@@ -31,6 +31,10 @@ namespace op
     OP_API void estimateAndSaveSiftFile(
         const Point<int>& gridInnerCorners, const std::string& imageFolder, const int numberCameras,
         const bool saveImagesWithCorners = false);
+
+    void estimateAndSaveCameraPose(
+        const std::string& parameterFolder, const std::string& imageFolder, const Point<int>& gridInnerCorners,
+        const float gridSquareSizeMm, const int index0, const bool imagesAreUndistorted);
 }
 
 #endif // OPENPOSE_CALIBRATION_CAMERA_PARAMETER_ESTIMATION_HPP

@@ -218,7 +218,34 @@ bool calibrateCameraExtrinsics(const std::vector<std::string>& cameraNames,
             // Run calibration
             op::opLog("Running calibration (extrinsic parameters)...", op::Priority::High);
             op::estimateAndSaveExtrinsics(op::formatAsDirectory(calibrateDir), calibrationImageDir,
-                gridInnerCorners, gridSqureSizeMm, i, i+1, true, i > 0);
+                gridInnerCorners, gridSqureSizeMm, i, i+1, true, true);//i > 0);
+            op::opLog("Extrinsic calibration completed!", op::Priority::High);
+        }
+        return true;
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
+}
+
+bool calibrateCameraPose(const std::vector<std::string>& cameraNames,
+    const std::string& calibrateDir, const std::string& gridLayout, float gridSize)
+{
+    try
+    {
+        bool saveImagesWithCorners = true;
+        float gridSqureSizeMm = (float)gridSize;
+        op::Point<int> gridInnerCorners = op::flagsToPoint(op::String(gridLayout), "11x8");
+        std::string calibrationImageDir = op::formatAsDirectory(calibrateDir+"/camerapose/");
+
+        for (size_t i = 0; i < cameraNames.size() - 1; i++)
+        {
+            // Run calibration
+            op::opLog("Running calibration (camera pose parameters)...", op::Priority::High);
+            op::estimateAndSaveCameraPose(op::formatAsDirectory(calibrateDir), calibrationImageDir,
+                gridInnerCorners, gridSqureSizeMm, i, true);
             op::opLog("Extrinsic calibration completed!", op::Priority::High);
         }
         return true;
