@@ -240,7 +240,7 @@ bool calibrateCameraPose(const std::vector<std::string>& cameraNames,
         op::Point<int> gridInnerCorners = op::flagsToPoint(op::String(gridLayout), "11x8");
         std::string calibrationImageDir = op::formatAsDirectory(calibrateDir+"/camerapose/");
 
-        for (size_t i = 0; i < cameraNames.size() - 1; i++)
+        for (size_t i = 0; i < cameraNames.size(); i++)
         {
             // Run calibration
             op::opLog("Running calibration (camera pose parameters)...", op::Priority::High);
