@@ -13,7 +13,7 @@
 		"cameraParamPath" : "datas/pose_tasks/MindCamera01/calibration",
 		"cameraResolution" : "1224x1024",
 		"cameraTriggerMode" : 1,
-		"captureFps" : -1,
+		"captureFps" : -1.0,
 		"frameUndistort" : false,
 		"inputType" : 3,
 		"videoPath" : "",

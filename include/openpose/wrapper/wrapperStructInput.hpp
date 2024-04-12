@@ -109,7 +109,7 @@ namespace op
             const bool framesRepeat = false, const Point<int>& cameraResolution = Point<int>{-1,-1},
             const String& cameraParameterPath = "models/cameraParameters/",
             const bool undistortImage = false, const int numberViews = -1, const int cameraTriggerMode = 0,
-            const double captureFps = -1, const bool batchProcessData = true, const bool cropImage = false);
+            const double captureFps = -1, const bool batchProcessData = true, const bool cropImage = true);
     };
 }
 
