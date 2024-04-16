@@ -12,7 +12,15 @@ namespace op
 {
     const auto RANDOM_TEXT = "_r8904530ijyiopf9034jiop4g90j0yh795640h38j";
     const std::string mImageFileExt = "jpg";
- 
+
+    static std::string formatTimeString()
+    {
+        time_t t = time(0);
+        char buffer[256];
+        strftime(buffer, sizeof(buffer), "%Y-%m-%d_%H-%M-%S", localtime(&t));
+        return std::string(buffer);
+    }
+
     double getTimestamp()
     {
         return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
@@ -32,6 +40,7 @@ namespace op
     struct VideoSaver::ImplVideoSaver
     {
         const std::string mVideoSaverPath;
+        std::string mVideoFilePath;
         const int mCvFourcc;
         const double mFps;
         const std::string mAddAudioFromThisVideo;
@@ -301,8 +310,18 @@ namespace op
                     }
                     // OpenCV video
                     else
-                        upImpl->mVideoWriter = openVideo(
-                            upImpl->mVideoSaverPath, upImpl->mCvFourcc, upImpl->mFps, upImpl->mCvSize);
+                    {
+                        std::string videoPath = upImpl->mVideoSaverPath;
+                        if (existDirectory(videoPath))
+                        {
+                            std::string strTime = formatTimeString();
+                            std::string videoDir = formatAsDirectory(videoPath) + strTime;
+                            op::makeDirectory(videoDir);
+                            videoPath = videoDir + "/golf_swing.mp4";
+                        }
+                        upImpl->mVideoFilePath = videoPath;
+                        upImpl->mVideoWriter = openVideo(videoPath, upImpl->mCvFourcc, upImpl->mFps, upImpl->mCvSize);
+                    }
                 }
                 // Sanity check
                 if (!isOpened())
@@ -319,8 +338,17 @@ namespace op
                         upImpl->mImageFinishCounter = 0;
                         upImpl->mImageSaverCounter = 0;
 
-                        std::string videoDir = getFileParentFolderPath(upImpl->mVideoSaverPath);
-                        std::string videoName = getFileNameAndExtension(upImpl->mVideoSaverPath);
+                        std::string videoDir, videoName;
+                        if (existDirectory(upImpl->mVideoSaverPath))
+                        {
+                            videoDir = formatAsDirectory(upImpl->mVideoSaverPath);
+                            videoName = upImpl->mVideoFilePath.substr(videoDir.length());
+                        }
+                        else
+                        {
+                            videoDir = getFileParentFolderPath(upImpl->mVideoSaverPath);
+                            videoName = getFileNameAndExtension(upImpl->mVideoSaverPath);
+                        }
                         std::string flagFile = videoDir + "/_CAPTURE_SUCCESS";
                         std::ofstream ofs(flagFile);
                         ofs << videoName; ofs.close();
