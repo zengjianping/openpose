@@ -48,7 +48,7 @@ namespace op
                     const auto fileNameNoExtension = getNextFileName(fileName) + "_camera";
                     // Get names for each image
                     for (auto i = 0u; i < fileNames.size(); i++)
-                        fileNames[i] = {fileNameNoExtension + std::to_string(i) + "." + mImageFormat};
+                        fileNames[i] = {fileNameNoExtension + "_" + std::to_string(i) + "." + mImageFormat};
                 }
                 else
                 {

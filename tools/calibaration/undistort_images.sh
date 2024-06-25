@@ -1,15 +1,18 @@
 #!/bin/bash
 
-data_dir="datas/pose_tests/mind_camera/test03/cameras"
-serial_no="camera02"
-grid_number="8x6"
+data_dir="datas/calib_datas/test_datas/calib-3_stereo_from_JY"
+camera_param_dir="$data_dir/camera_params"
+num_cameras=2
+
+in_image_dir="${data_dir}/intrinsics"
+out_image_dir="${data_dir}/extrinsics"
+mkdir -p "$out_image_dir"
 
 ./build/examples/openpose/openpose.bin \
-    --image_dir ${data_dir}/${serial_no} \
-    --camera_parameter_path ${data_dir}/${serial_no}.xml \
-    --write_images ${data_dir}/extrinsics \
-    --frame_undistort 
-
-
+    --video ${in_image_dir} \
+    --camera_parameter_path ${camera_param_dir} \
+    --write_images ${out_image_dir} \
+    --3d_views ${num_cameras} \
+    --frame_undistort --write_image_mode 1
 
 
