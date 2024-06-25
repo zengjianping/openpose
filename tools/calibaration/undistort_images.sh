@@ -12,7 +12,7 @@ mkdir -p "$out_image_dir"
     --video ${in_image_dir} \
     --camera_parameter_path ${camera_param_dir} \
     --write_images ${out_image_dir} \
-    --3d_views ${num_cameras} \
+    --3d_views ${num_cameras} --num_gpu 0 \
     --frame_undistort --write_image_mode 1
 
 
