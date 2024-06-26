@@ -1,5 +1,6 @@
 #include <openpose/filestream/imageSaver.hpp>
 #include <openpose/filestream/fileStream.hpp>
+#include <openpose/utilities/fileSystem.hpp>
 
 namespace op
 {
@@ -43,12 +44,24 @@ namespace op
             {
                 std::vector<std::string> fileNames(matOutputDatas.size());
 
-                if (matOutputDatas.size() > 0 && mWriteImageMode > 0)
+                if (mWriteImageMode == 1)
                 {
                     const auto fileNameNoExtension = getNextFileName(fileName) + "_camera";
                     // Get names for each image
                     for (auto i = 0u; i < fileNames.size(); i++)
                         fileNames[i] = {fileNameNoExtension + (matOutputDatas.size() > 1 ? "_" + std::to_string(i) : "") + "." + mImageFormat};
+                }
+                else if (mWriteImageMode == 2)
+                {
+                    // Get names for each image
+                    for (auto i = 0u; i < fileNames.size(); i++)
+                    {
+                        const std::string cameraName = "camera" + op::toFixedLengthString(i+1, 2);
+                        const std::string imageDir = op::formatAsDirectory(mDirectoryPath + cameraName);
+                        op::makeDirectory(imageDir);
+                        const auto fileNameNoExtension = imageDir + fileName;
+                        fileNames[i] = {fileNameNoExtension + "." + mImageFormat};
+                    }
                 }
                 else
                 {

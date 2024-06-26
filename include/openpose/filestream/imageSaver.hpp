@@ -17,7 +17,7 @@ namespace op
 
         void saveImages(const std::vector<Matrix>& matOutputDatas, const std::string& fileName) const;
 
-    private:
+    protected:
         const std::string mImageFormat;
         const int mWriteImageMode;
     };

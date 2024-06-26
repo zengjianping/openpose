@@ -1,22 +1,25 @@
 #!/bin/bash
 
 data_dir="datas/calib_datas/hikv_camera/test01"
-camera_index=-1
-task_name="intrinsics"
-capture_fps=2
 camera_resolution="1224x1024"
-save_images=0
+camera_index=-1
+capture_fps=2
+task_name="campose"
+save_images=1
+write_mode=2
 
-if [ $save_images != 1 ]; then
-    out_image_dir=""
-elif [ $camera_index >= 0 ]; then
-    let j=$camera_index+1
-    serial_no=`printf "camera%02d" $j`
-    out_image_dir="$data_dir/$task_name/$serial_no"
-    mkdir -p $out_image_dir
+if [ $save_images -eq 0 ]; then
+    save_param=""
 else
-    out_image_dir="$data_dir/$task_name"
+    if [ $camera_index -ge 0 ]; then
+        let j=$camera_index+1
+        serial_no=`printf "camera%02d" $j`
+        out_image_dir="$data_dir/$task_name/$serial_no"
+    else
+        out_image_dir="$data_dir/$task_name"
+    fi
     mkdir -p $out_image_dir
+    save_param="--write_images $out_image_dir"
 fi
 
 ./build/examples/openpose/openpose.bin \
@@ -25,7 +28,6 @@ fi
     --camera_trigger_mode 1 \
     --capture_fps $capture_fps \
     --camera_resolution $camera_resolution \
-    --write_images $out_image_dir \
-    --write_image_mode 1
+    --write_image_mode $write_mode $save_param
 
 

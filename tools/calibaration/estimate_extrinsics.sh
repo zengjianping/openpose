@@ -1,10 +1,10 @@
 #!/bin/bash
 
-data_dir="datas/calib_datas/test_datas/calib-3_stereo_from_JY"
+data_dir="datas/calib_datas/hikv_camera/test01"
 camera_param_dir="$data_dir/camera_params"
-grid_number="8x6"
-square_size=60
-num_cameras=2
+grid_number="7x6"
+square_size=120
+num_cameras=4
 copy_data=0
 
 calib_image_dir="${data_dir}/extrinsics"
@@ -24,13 +24,12 @@ fi
 for ((i=0; i<$num_cameras-1; i++))
 do
     let j=i+1
-    serial_no=`printf "camera%02d" $j`
-    echo "Processing $i -> $j"
+    echo "Processing camera $i -> $j..."
 
-    extra_param=
-    if [[ $i > 0 ]]; then
-        extra_param="--combine_cam0_extrinsics"
-    fi
+    extra_param="--combine_cam0_extrinsics"
+    #if [[ $i > 0 ]]; then
+    #    extra_param="--combine_cam0_extrinsics"
+    #fi
 
     ./build/examples/calibration/calibration.bin \
         --mode 2 --omit_distortion \

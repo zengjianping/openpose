@@ -1,10 +1,10 @@
 #!/bin/bash
 
-data_dir="datas/calib_datas/test_datas/calib-3_stereo_from_JY"
+data_dir="datas/calib_datas/hikv_camera/test01"
 camera_param_dir="$data_dir/camera_params"
-grid_number="8x6"
-square_size=60
-num_cameras=2
+grid_number="7x6"
+square_size=120
+num_cameras=4
 
 calib_image_dir="${data_dir}/extrinsics"
 

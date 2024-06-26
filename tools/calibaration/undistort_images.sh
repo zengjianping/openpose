@@ -1,11 +1,11 @@
 #!/bin/bash
 
-data_dir="datas/calib_datas/test_datas/calib-3_stereo_from_JY"
+data_dir="datas/calib_datas/hikv_camera/test01"
 camera_param_dir="$data_dir/camera_params"
-num_cameras=2
+num_cameras=4
 
-in_image_dir="${data_dir}/intrinsics"
-out_image_dir="${data_dir}/extrinsics"
+in_image_dir="${data_dir}/campose"
+out_image_dir="${data_dir}/campose"
 mkdir -p "$out_image_dir"
 
 ./build/examples/openpose/openpose.bin \

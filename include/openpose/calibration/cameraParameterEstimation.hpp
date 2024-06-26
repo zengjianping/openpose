@@ -32,7 +32,7 @@ namespace op
         const Point<int>& gridInnerCorners, const std::string& imageFolder, const int numberCameras,
         const bool saveImagesWithCorners = false);
 
-    void estimateAndSaveCameraPose(
+    OP_API void estimateAndSaveCameraPose(
         const std::string& parameterFolder, const std::string& imageFolder, const Point<int>& gridInnerCorners,
         const float gridSquareSizeMm, const int index0, const bool imagesAreUndistorted);
 }

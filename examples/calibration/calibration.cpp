@@ -84,6 +84,18 @@ int openPoseDemo()
             op::opLog("Extrinsic calibration completed!", op::Priority::High);
         }
 
+        // Calibration - Camera pose
+        else if (FLAGS_mode == 4)
+        {
+            op::opLog("Running calibration (camera pose parameters)...", op::Priority::High);
+            // Run calibration
+            op::estimateAndSaveCameraPose(
+                FLAGS_camera_parameter_folder, calibrationImageDir, gridInnerCorners, gridSqureSizeMm,
+                FLAGS_cam0, FLAGS_omit_distortion);
+            // Logging
+            op::opLog("Camera pose calibration completed!", op::Priority::High);
+        }
+
         // Calibration - Extrinsics - Bundle Adjustment (BA)
         else if (FLAGS_mode == 3)
         {

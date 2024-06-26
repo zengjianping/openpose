@@ -207,11 +207,19 @@ namespace op
     HikvReaderImpl::HikvReaderImpl(const std::string& cameraParameterPath, const Point<int>& cameraResolution,
             bool undistortImage, int cameraIndex, int cameraTriggerMode, double& captureFps, bool cropImage)
     {
-        for (int i = 0; i < 32; i++)
+        if (cameraIndex < 0)
         {
-            if ((cameraIndex >> i) & 1)
-                mCameraIndice.push_back(i);
+            for (int i = 0; i < 32; i++)
+            {
+                if ((cameraIndex >> i) & 1)
+                    mCameraIndice.push_back(i);
+            }
         }
+        else
+        {
+            mCameraIndice.push_back(cameraIndex);
+        }
+
         mCameraTriggerMode = cameraTriggerMode;
         mUndistortImage = undistortImage;
         mResolution = cameraResolution;

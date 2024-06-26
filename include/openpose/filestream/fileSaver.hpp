@@ -17,7 +17,7 @@ namespace op
 
         std::string getNextFileName(const std::string& fileNameNoExtension) const;
 
-    private:
+    protected:
         const std::string mDirectoryPath;
     };
 }

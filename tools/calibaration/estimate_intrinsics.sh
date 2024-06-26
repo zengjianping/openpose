@@ -1,10 +1,10 @@
 #!/bin/bash
 
-data_dir="datas/calib_datas/test_datas/calib-3_stereo_from_JY"
+data_dir="datas/calib_datas/hikv_camera/test01"
 camera_param_dir="$data_dir/camera_params"
-grid_number="8x6"
-square_size=60
-num_cameras=2
+grid_number="11x8"
+square_size=30
+num_cameras=4
 copy_data=0
 
 mkdir -p "$camera_param_dir"
@@ -19,7 +19,7 @@ do
 
     if [ $copy_data == 1 ]; then
         mkdir -p $calib_image_dir
-        cp ${data_dir}/intrinsics/*camera${i}.png $calib_image_dir/
+        cp ${data_dir}/intrinsics/*camera_${i}.png $calib_image_dir/
     fi
 
     ./build/examples/calibration/calibration.bin \

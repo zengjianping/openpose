@@ -62,6 +62,15 @@ namespace op
         };
     #endif
 
+    cv::Mat invertExtrinsics(const cv::Mat& input)
+    {
+        cv::Mat output = cv::Mat::eye(4, 4, input.type());
+        for (auto i = 0 ; i < 3 ; i++)
+            for (auto j = 0 ; j < 4 ; j++)
+                output.at<double>(i, j) = input.at<double>(i, j);
+        return output.inv();
+    }
+
     std::vector<std::string> getImagePaths(const std::string& imageDirectoryPath)
     {
         try
@@ -338,7 +347,7 @@ namespace op
                     Eigen::Matrix4d minMatrix;
 
                     MsToAverageRobust.clear();
-                    for (const auto& matrix : MsToAverage)
+                    for (const auto matrix : MsToAverage)
                     {
                         bool addElement = true;
                         for (auto col = 0 ; col < 3 ; col++)
@@ -1215,6 +1224,7 @@ namespace op
                 opLog("", Priority::Low, __LINE__, __FUNCTION__, __FILE__);
                 opLog("\nFinal projection matrix w.r.t. global origin (meters):", Priority::High);
                 opLog(cvMatExtrinsics, Priority::High);
+                opLog(invertExtrinsics(cvMatExtrinsics), Priority::High);
                 opLog(" ", Priority::High);
 
                 // Save result
@@ -1223,6 +1233,7 @@ namespace op
                     cameraSerialNumbers.at(index1),
                     OP_CV2OPMAT(cameraIntrinsicsSubset.at(1)),
                     OP_CV2OPMAT(realCameraDistortions.at(index1)),
+                    OP_CV2OPMAT(cvMatExtrinsics),
                     OP_CV2OPMAT(cvMatExtrinsics)
                 };
                 cameraParameterReaderFinal.writeParameters(parameterFolder);
@@ -1445,6 +1456,7 @@ namespace op
                 opLog("", Priority::Low, __LINE__, __FUNCTION__, __FILE__);
                 opLog("\nFinal projection matrix w.r.t. global origin (meters):", Priority::High);
                 opLog(cvMatExtrinsics, Priority::High);
+                opLog(invertExtrinsics(cvMatExtrinsics), Priority::High);
                 opLog(" ", Priority::High);
 
                 // Save result
@@ -1453,6 +1465,7 @@ namespace op
                     cameraSerialNumbers.at(index0),
                     OP_CV2OPMAT(cameraIntrinsicsSubset.at(0)),
                     OP_CV2OPMAT(realCameraDistortions.at(index0)),
+                    OP_CV2OPMAT(cvMatExtrinsics),
                     OP_CV2OPMAT(cvMatExtrinsics)
                 };
                 cameraParameterReaderFinal.writeParameters(parameterFolder);
@@ -2529,7 +2542,9 @@ namespace op
                     points2DVectorsExtrinsic, cameraIntrinsics, cameraExtrinsics, numberCameras, imageSize);
                 opLog("Finished.");
 
-                auto refinedExtrinsics = cameraExtrinsics;
+                std::vector<cv::Mat> refinedExtrinsics(cameraExtrinsics.size());
+                for (size_t i = 0; i < cameraExtrinsics.size(); i++)
+                    refinedExtrinsics[i] = cameraExtrinsics[i].clone();
                 auto points3D = initialPoints3D;
                 Eigen::MatrixXd BAValid;
 
@@ -2557,6 +2572,7 @@ namespace op
                 opLog("", Priority::Low, __LINE__, __FUNCTION__, __FILE__);
                 cv::Mat cameraOriginInv2;
                 cameraXAsOrigin(refinedExtrinsics, cameraOriginInv2, cameraOriginInv);
+                cameraXAsOrigin(cameraExtrinsics, cameraOriginInv2, cameraOriginInv);
                 // Sanity check
                 auto normCam0Identity = cv::norm(refinedExtrinsics[0] - cameraExtrinsics[0]);
                 if (normCam0Identity > 1e-9) // std::cout prints exactly 0
@@ -2570,6 +2586,7 @@ namespace op
                 {
                     opLog("Camera " + std::to_string(cameraIndex) + ":", Priority::High);
                     opLog(refinedExtrinsics[cameraIndex], Priority::High);
+                    opLog(invertExtrinsics(refinedExtrinsics[cameraIndex]), Priority::High);
                     // opLog("Initial camera " + std::to_string(cameraIndex) + ":", Priority::High);
                     // opLog(cameraExtrinsics[cameraIndex], Priority::High);
                     const auto normDifference = cv::norm(
