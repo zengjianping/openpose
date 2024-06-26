@@ -4,7 +4,7 @@ data_dir="datas/calib_datas/hikv_camera/test01"
 camera_resolution="1224x1024"
 camera_index=-1
 capture_fps=2
-task_name="campose"
+task_name="extrinsics"
 save_images=1
 write_mode=2
 

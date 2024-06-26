@@ -360,7 +360,7 @@ namespace op
                                     minDiff = diff;
                                     minMatrix = matrix;
                                 }
-                                if (diff> 0.25)
+                                if (diff > 0.25)
                                 {
                                     addElement = false;
                                     break;
@@ -373,6 +373,8 @@ namespace op
 
                     if (MsToAverage.size() > 0 && MsToAverageRobust.size() == 0)
                     {
+                        opLog("Using minMatrix: ", Priority::High);
+                        opLog(minMatrix, Priority::High);
                         MsToAverageRobust.push_back(minMatrix);
                     }
                 }
