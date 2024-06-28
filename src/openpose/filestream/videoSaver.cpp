@@ -86,7 +86,7 @@ namespace op
                 DataTransferIF::Option option;
                 option.type_name = "udp";
                 option.udp.ip_address = "127.0.0.1";
-                option.udp.port_num = 18081;
+                option.udp.port_num = 18089;
                 mMessageReceiver = DataTransferIF::CreateInstance(option, true);
             }
             catch (const std::exception& e)
@@ -272,10 +272,12 @@ namespace op
             {
                 buffer[byte_num] = 0;
                 std::string message((char*)(&buffer[0]));
-                std::cout << "Received message: " << message << std::endl;
                 //if (strcmp((char*)(&buffer[0]), "save") == 0)
-                if (message.find("ShortID") >= 0)
+                if (message.find("ShotID") != std::string::npos)
+                {
+                    std::cout << "Received message: " << message << std::endl;
                     triggerSaveCmd = true;
+                }
             }
 
             double timestamp = getTimestamp();
