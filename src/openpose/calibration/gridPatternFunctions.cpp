@@ -381,6 +381,8 @@ namespace op
                 const auto point02Norm = cv::norm(point02);
                 const auto point13 = fourPointsVector.at(1)-fourPointsVector.at(3);
                 const auto point13Norm = cv::norm(point13);
+                const auto point32 = fourPointsVector.at(3)-fourPointsVector.at(2);
+                const auto point32Norm = cv::norm(point32);
                 const auto averageSquareSizePx =
                     (point01Norm/gridInnerCorners.width
                     + point02Norm/gridInnerCorners.height
@@ -402,6 +404,7 @@ namespace op
                 const auto point01Direction = 1. / point01Norm * point01;
                 const auto point02Direction = 1. / point02Norm * point02;
                 const auto point13Direction = 1. / point13Norm * point13;
+                const auto point32Direction = 1. / point32Norm * point32;
                 // Debugging
                 if (debugging)
                 {
@@ -411,17 +414,25 @@ namespace op
                     opLog(point02Direction);
                     opLog("point13Direction:");
                     opLog(point13Direction);
+                    opLog("point32Direction:");
+                    opLog(point32Direction);
                     opLog(" ");
                 }
 
                 auto pointDirection = fourPointsVector; // Initialization
                 pointDirection[0] = 1. / cv::norm(point01Direction + point02Direction)
                                   * (point01Direction + point02Direction);
-                pointDirection[1] = pointDirection[0];
-                pointDirection[1].y *= -1;
-                pointDirection[2] = pointDirection[0];
-                pointDirection[2].x *= -1;
-                pointDirection[3] = -pointDirection[0];
+                pointDirection[1] = 1. / cv::norm(-point01Direction + point13Direction)
+                                  * (-point01Direction + point13Direction);
+                pointDirection[2] = 1. / cv::norm(-point02Direction - point32Direction)
+                                  * (-point02Direction - point32Direction);
+                pointDirection[3] = 1. / cv::norm(-point13Direction + point32Direction)
+                                  * (-point13Direction + point32Direction);
+                //pointDirection[1] = pointDirection[0];
+                //pointDirection[1].y *= -1;
+                //pointDirection[2] = pointDirection[0];
+                //pointDirection[2].x *= -1;
+                //pointDirection[3] = -pointDirection[0];
                 // Debugging
                 if (debugging)
                 {
