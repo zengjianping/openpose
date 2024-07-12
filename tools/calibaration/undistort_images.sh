@@ -1,6 +1,6 @@
 #!/bin/bash
 
-data_dir="datas/calib_datas/hikv_camera/test01"
+data_dir="datas/calib_datas/hikv_camera/test03"
 camera_param_dir="$data_dir/camera_params"
 num_cameras=4
 
