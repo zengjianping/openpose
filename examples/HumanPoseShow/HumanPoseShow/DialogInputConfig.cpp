@@ -39,7 +39,7 @@ void DialogInputConfig::initializeUI()
     ui->checkAllCamera->setChecked(true);
 
     // 相机分辨率
-    QStringList cameraResolutions = {"-1x-1", "1224x1024"};
+    QStringList cameraResolutions = {"-1x-1", "1224x1024", "1280x1024"};
     ui->combCameraResolution->addItems(cameraResolutions);
 
     // 相机帧率

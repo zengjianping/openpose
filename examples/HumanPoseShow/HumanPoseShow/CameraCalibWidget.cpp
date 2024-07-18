@@ -74,12 +74,14 @@ void CameraCalibWidget::on_buttonIntStartCapture_clicked()
         setCursor(Qt::WaitCursor);
         HumanPoseParams params = *humanPoseParams;
         params.algorithmParams.algoType = HumanPoseParams::AlgorithmParams::AlgoTypeNo;
-        params.inputParams.cameraIndex = 1 << ui->combCameraList->currentIndex();
-        params.inputParams.captureFps = 1;
+        params.inputParams.cameraIndex = ui->combCameraList->currentIndex();
+        params.inputParams.captureFps = 2;
+        params.inputParams.cameraTriggerMode = 1;
         params.inputParams.frameUndistort = false;
         params.outputParams.saveVideo = false;
         params.outputParams.saveVideo3d = false;
         params.outputParams.saveImage = true;
+        params.outputParams.writeImageMode = 1;
         params.outputParams.notUseTime = true;
         std::string cameraName = ui->combCameraList->currentText().toStdString();
         std::string calibPath = params.inputParams.cameraParamPath;
@@ -136,11 +138,13 @@ void CameraCalibWidget::on_buttonExtStartCapture_clicked()
         HumanPoseParams params = *humanPoseParams;
         params.algorithmParams.algoType = HumanPoseParams::AlgorithmParams::AlgoTypeNo;
         params.inputParams.cameraIndex = -1;
-        params.inputParams.captureFps = 1;
+        params.inputParams.captureFps = 2;
+        params.inputParams.cameraTriggerMode = 1;
         params.inputParams.frameUndistort = true;
         params.outputParams.saveVideo = false;
         params.outputParams.saveVideo3d = false;
         params.outputParams.saveImage = true;
+        params.outputParams.writeImageMode = 1;
         params.outputParams.notUseTime = true;
         std::string calibPath = params.inputParams.cameraParamPath;
         QDir calibDir(QString::fromStdString(calibPath));
@@ -196,6 +200,9 @@ void CameraCalibWidget::on_buttonExtStartCalibrate_clicked()
             else
             {
                 res = calibrateCameraExtrinsics(cameraNames, calibrateDir, gridLayout, gridSize);
+                if (res) {
+                    res = refineCameraExtrinsics(cameraNames, calibrateDir, gridLayout, gridSize);
+                }
             }
 
             unsetCursor();

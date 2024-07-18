@@ -41,6 +41,7 @@ struct HumanPoseParams
         bool notUseTime = false;
         bool saveImage = false;
         std::string imageSavePath = "";
+        int writeImageMode = 0;
         bool saveVideo = false;
         std::string videoSavePath = "";
         bool saveVideo3d = false;
@@ -100,6 +101,8 @@ bool calibrateCameraIntrinsics(const std::vector<std::string>& cameraNames,
 bool calibrateCameraExtrinsics(const std::vector<std::string>& cameraNames,
     const std::string& calibrateDir, const std::string& gridLayout, float gridSize);
 bool calibrateCameraPose(const std::vector<std::string>& cameraNames,
+    const std::string& calibrateDir, const std::string& gridLayout, float gridSize);
+bool refineCameraExtrinsics(const std::vector<std::string>& cameraNames,
     const std::string& calibrateDir, const std::string& gridLayout, float gridSize);
 
 

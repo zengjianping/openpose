@@ -208,7 +208,6 @@ bool calibrateCameraExtrinsics(const std::vector<std::string>& cameraNames,
 {
     try
     {
-        bool saveImagesWithCorners = true;
         float gridSqureSizeMm = (float)gridSize;
         op::Point<int> gridInnerCorners = op::flagsToPoint(op::String(gridLayout), "11x8");
         std::string calibrationImageDir = op::formatAsDirectory(calibrateDir+"/extrinsics/");
@@ -235,7 +234,6 @@ bool calibrateCameraPose(const std::vector<std::string>& cameraNames,
 {
     try
     {
-        bool saveImagesWithCorners = true;
         float gridSqureSizeMm = (float)gridSize;
         op::Point<int> gridInnerCorners = op::flagsToPoint(op::String(gridLayout), "11x8");
         std::string calibrationImageDir = op::formatAsDirectory(calibrateDir+"/camerapose/");
@@ -248,6 +246,29 @@ bool calibrateCameraPose(const std::vector<std::string>& cameraNames,
                 gridInnerCorners, gridSqureSizeMm, i, true);
             op::opLog("Extrinsic calibration completed!", op::Priority::High);
         }
+        return true;
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
+}
+
+bool refineCameraExtrinsics(const std::vector<std::string>& cameraNames,
+    const std::string& calibrateDir, const std::string& gridLayout, float gridSize)
+{
+    try
+    {
+        bool saveImagesWithCorners = true;
+        float gridSqureSizeMm = (float)gridSize;
+        op::Point<int> gridInnerCorners = op::flagsToPoint(op::String(gridLayout), "11x8");
+        std::string calibrationImageDir = op::formatAsDirectory(calibrateDir+"/extrinsics/");
+
+        op::opLog("Running calibration (refine extrinsics parameters)...", op::Priority::High);
+        op::refineAndSaveExtrinsics(op::formatAsDirectory(calibrateDir), calibrationImageDir,
+            gridInnerCorners, gridSqureSizeMm, cameraNames.size(), true, true);
+        op::opLog("Extrinsics refine completed!", op::Priority::High);
         return true;
     }
     catch(const std::exception& e)
@@ -515,6 +536,7 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
         int write_coco_json_variants = 1;
         int write_coco_json_variant = 0;
         std::string write_images = "";
+        int write_image_mode = 0;
         std::string write_images_format = "png";
         std::string write_video = "";
         double write_video_fps = -1;
@@ -586,6 +608,7 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
                 write_images = strDir + strSubDir;
             }
             op::makeDirectory(write_images);
+            write_image_mode = params.outputParams.writeImageMode;
         }
         if (params.outputParams.saveVideo && !params.outputParams.videoSavePath.empty()) {
             std::string strFile = strTime + ".mp4";
@@ -696,7 +719,7 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
             op::String(write_video), write_video_fps, write_video_with_audio,
             op::String(write_heatmaps), op::String(write_heatmaps_format), op::String(write_video_3d),
             op::String(write_video_adam), op::String(write_bvh), op::String(udp_host),
-            op::String(udp_port)};
+            op::String(udp_port), write_image_mode};
         opWrapper.configure(wrapperStructOutput);
 
         // GUI (comment or use default argument to disable any visual output)
