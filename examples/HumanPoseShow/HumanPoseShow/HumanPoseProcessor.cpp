@@ -174,7 +174,7 @@ bool queryCameraList(const HumanPoseParams& params, std::string& cameraType,
     return false;
 }
 
-bool calibrateCameraIntrinsics(const std::vector<std::string>& cameraNames,
+bool calibrateCameraIntrinsics(const std::string& cameraName, const std::string& imageDir,
     const std::string& calibrateDir, const std::string& gridLayout, float gridSize)
 {
     try
@@ -184,16 +184,12 @@ bool calibrateCameraIntrinsics(const std::vector<std::string>& cameraNames,
         float gridSqureSizeMm = (float)gridSize;
         op::Point<int> gridInnerCorners = op::flagsToPoint(op::String(gridLayout), "11x8");
 
-        for (size_t i = 0; i < cameraNames.size(); i++)
-        {
-            // Run calibration
-            op::opLog("Running calibration (intrinsic parameters)...", op::Priority::High);
-            std::string calibrationImageDir = op::formatAsDirectory(calibrateDir+"/intrinsics/" + cameraNames[i]);
-            op::estimateAndSaveIntrinsics(gridInnerCorners, gridSqureSizeMm, flags,
-                op::formatAsDirectory(calibrateDir), calibrationImageDir, cameraNames[i],
-                saveImagesWithCorners, false);
-            op::opLog("Intrinsic calibration completed!", op::Priority::High);
-        }
+        // Run calibration
+        op::opLog("Running calibration (intrinsic parameters)...", op::Priority::High);
+        op::estimateAndSaveIntrinsics(gridInnerCorners, gridSqureSizeMm, flags,
+            op::formatAsDirectory(calibrateDir), imageDir, cameraName,
+            saveImagesWithCorners, false);
+        op::opLog("Intrinsic calibration completed!", op::Priority::High);
         return true;
     }
     catch (const std::exception& e)
@@ -203,20 +199,19 @@ bool calibrateCameraIntrinsics(const std::vector<std::string>& cameraNames,
     }
 }
 
-bool calibrateCameraExtrinsics(const std::vector<std::string>& cameraNames,
+bool calibrateCameraExtrinsics(const std::vector<std::string>& cameraNames, const std::string& imageDir,
     const std::string& calibrateDir, const std::string& gridLayout, float gridSize)
 {
     try
     {
         float gridSqureSizeMm = (float)gridSize;
         op::Point<int> gridInnerCorners = op::flagsToPoint(op::String(gridLayout), "11x8");
-        std::string calibrationImageDir = op::formatAsDirectory(calibrateDir+"/extrinsics/");
 
         for (size_t i = 0; i < cameraNames.size() - 1; i++)
         {
             // Run calibration
             op::opLog("Running calibration (extrinsic parameters)...", op::Priority::High);
-            op::estimateAndSaveExtrinsics(op::formatAsDirectory(calibrateDir), calibrationImageDir,
+            op::estimateAndSaveExtrinsics(op::formatAsDirectory(calibrateDir), imageDir,
                 gridInnerCorners, gridSqureSizeMm, i, i+1, true, true);//i > 0);
             op::opLog("Extrinsic calibration completed!", op::Priority::High);
         }
@@ -229,20 +224,19 @@ bool calibrateCameraExtrinsics(const std::vector<std::string>& cameraNames,
     }
 }
 
-bool calibrateCameraPose(const std::vector<std::string>& cameraNames,
+bool calibrateCameraPose(const std::vector<std::string>& cameraNames, const std::string& imageDir,
     const std::string& calibrateDir, const std::string& gridLayout, float gridSize)
 {
     try
     {
         float gridSqureSizeMm = (float)gridSize;
         op::Point<int> gridInnerCorners = op::flagsToPoint(op::String(gridLayout), "11x8");
-        std::string calibrationImageDir = op::formatAsDirectory(calibrateDir+"/camerapose/");
 
         for (size_t i = 0; i < cameraNames.size(); i++)
         {
             // Run calibration
             op::opLog("Running calibration (camera pose parameters)...", op::Priority::High);
-            op::estimateAndSaveCameraPose(op::formatAsDirectory(calibrateDir), calibrationImageDir,
+            op::estimateAndSaveCameraPose(op::formatAsDirectory(calibrateDir), imageDir,
                 gridInnerCorners, gridSqureSizeMm, i, true);
             op::opLog("Extrinsic calibration completed!", op::Priority::High);
         }
@@ -255,7 +249,7 @@ bool calibrateCameraPose(const std::vector<std::string>& cameraNames,
     }
 }
 
-bool refineCameraExtrinsics(const std::vector<std::string>& cameraNames,
+bool refineCameraExtrinsics(const std::vector<std::string>& cameraNames, const std::string& imageDir,
     const std::string& calibrateDir, const std::string& gridLayout, float gridSize)
 {
     try
@@ -263,10 +257,9 @@ bool refineCameraExtrinsics(const std::vector<std::string>& cameraNames,
         bool saveImagesWithCorners = true;
         float gridSqureSizeMm = (float)gridSize;
         op::Point<int> gridInnerCorners = op::flagsToPoint(op::String(gridLayout), "11x8");
-        std::string calibrationImageDir = op::formatAsDirectory(calibrateDir+"/extrinsics/");
 
         op::opLog("Running calibration (refine extrinsics parameters)...", op::Priority::High);
-        op::refineAndSaveExtrinsics(op::formatAsDirectory(calibrateDir), calibrationImageDir,
+        op::refineAndSaveExtrinsics(op::formatAsDirectory(calibrateDir), imageDir,
             gridInnerCorners, gridSqureSizeMm, cameraNames.size(), true, true);
         op::opLog("Extrinsics refine completed!", op::Priority::High);
         return true;

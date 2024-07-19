@@ -96,13 +96,13 @@ private:
 
 bool queryCameraList(const HumanPoseParams& params, std::string& cameraType,
     std::vector<std::string>& cameraNames);
-bool calibrateCameraIntrinsics(const std::vector<std::string>& cameraNames,
+bool calibrateCameraIntrinsics(const std::string& cameraName, const std::string& imageDir,
     const std::string& calibrateDir, const std::string& gridLayout, float gridSize);
-bool calibrateCameraExtrinsics(const std::vector<std::string>& cameraNames,
+bool calibrateCameraExtrinsics(const std::vector<std::string>& cameraNames, const std::string& imageDir,
     const std::string& calibrateDir, const std::string& gridLayout, float gridSize);
-bool calibrateCameraPose(const std::vector<std::string>& cameraNames,
+bool calibrateCameraPose(const std::vector<std::string>& cameraNames, const std::string& imageDir,
     const std::string& calibrateDir, const std::string& gridLayout, float gridSize);
-bool refineCameraExtrinsics(const std::vector<std::string>& cameraNames,
+bool refineCameraExtrinsics(const std::vector<std::string>& cameraNames, const std::string& imageDir,
     const std::string& calibrateDir, const std::string& gridLayout, float gridSize);
 
 

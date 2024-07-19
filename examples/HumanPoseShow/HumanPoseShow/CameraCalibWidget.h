@@ -35,6 +35,7 @@ private slots:
 private:
     void initializeUI();
     void updateUI();
+    std::string getImageDir(const std::string& calibrateDir, const std::string subDirName);
 
 private:
     Ui::CameraCalibWidget *ui;
