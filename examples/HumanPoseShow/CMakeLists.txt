@@ -15,6 +15,8 @@ find_package(PkgConfig REQUIRED)
 find_package(jsoncpp REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp)
 
+find_package(Boost COMPONENTS system filesystem REQUIRED)
+
 include_directories(
     ${JSONCPP_INCLUDE_DIRS}
 )
@@ -74,6 +76,8 @@ target_link_libraries(${EXE_NAME}
   Qt5::Widgets
   openpose
   crypto++
+  ${Boost_FILESYSTEM_LIBRARY}
+  ${Boost_SYSTEM_LIBRARY}
   ${JSONCPP_LIBRARIES}
   ${examples_3rdparty_libraries}
 )

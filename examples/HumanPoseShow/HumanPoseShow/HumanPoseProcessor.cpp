@@ -187,8 +187,8 @@ bool calibrateCameraIntrinsics(const std::string& cameraName, const std::string&
         // Run calibration
         op::opLog("Running calibration (intrinsic parameters)...", op::Priority::High);
         op::estimateAndSaveIntrinsics(gridInnerCorners, gridSqureSizeMm, flags,
-            op::formatAsDirectory(calibrateDir), imageDir, cameraName,
-            saveImagesWithCorners, false);
+            op::formatAsDirectory(calibrateDir), op::formatAsDirectory(imageDir),
+            cameraName, saveImagesWithCorners, false);
         op::opLog("Intrinsic calibration completed!", op::Priority::High);
         return true;
     }
@@ -211,8 +211,9 @@ bool calibrateCameraExtrinsics(const std::vector<std::string>& cameraNames, cons
         {
             // Run calibration
             op::opLog("Running calibration (extrinsic parameters)...", op::Priority::High);
-            op::estimateAndSaveExtrinsics(op::formatAsDirectory(calibrateDir), imageDir,
-                gridInnerCorners, gridSqureSizeMm, i, i+1, true, true);//i > 0);
+            op::estimateAndSaveExtrinsics(op::formatAsDirectory(calibrateDir),
+                op::formatAsDirectory(imageDir), gridInnerCorners, gridSqureSizeMm,
+                i, i+1, true, true);//i > 0);
             op::opLog("Extrinsic calibration completed!", op::Priority::High);
         }
         return true;
@@ -236,8 +237,8 @@ bool calibrateCameraPose(const std::vector<std::string>& cameraNames, const std:
         {
             // Run calibration
             op::opLog("Running calibration (camera pose parameters)...", op::Priority::High);
-            op::estimateAndSaveCameraPose(op::formatAsDirectory(calibrateDir), imageDir,
-                gridInnerCorners, gridSqureSizeMm, i, true);
+            op::estimateAndSaveCameraPose(op::formatAsDirectory(calibrateDir),
+                op::formatAsDirectory(imageDir), gridInnerCorners, gridSqureSizeMm, i, true);
             op::opLog("Extrinsic calibration completed!", op::Priority::High);
         }
         return true;
@@ -259,7 +260,7 @@ bool refineCameraExtrinsics(const std::vector<std::string>& cameraNames, const s
         op::Point<int> gridInnerCorners = op::flagsToPoint(op::String(gridLayout), "11x8");
 
         op::opLog("Running calibration (refine extrinsics parameters)...", op::Priority::High);
-        op::refineAndSaveExtrinsics(op::formatAsDirectory(calibrateDir), imageDir,
+        op::refineAndSaveExtrinsics(op::formatAsDirectory(calibrateDir), op::formatAsDirectory(imageDir),
             gridInnerCorners, gridSqureSizeMm, cameraNames.size(), true, true);
         op::opLog("Extrinsics refine completed!", op::Priority::High);
         return true;

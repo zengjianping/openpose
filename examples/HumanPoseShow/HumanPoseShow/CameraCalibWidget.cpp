@@ -3,6 +3,7 @@
 #include "ui_CameraCalibWidget.h"
 #include <QMessageBox>
 #include <QDir>
+#include "boost/filesystem.hpp"   // includes all needed Boost.Filesystem declarations
 
 
 CameraCalibWidget::CameraCalibWidget(QWidget *parent)
@@ -68,13 +69,22 @@ void CameraCalibWidget::on_buttonCameraInfo_clicked()
     updateUI();
 }
 
-std::string CameraCalibWidget::getImageDir(const std::string& calibrateDir, const std::string subDirName)
+std::string CameraCalibWidget::getImageDir(const std::string& calibrateDir, const std::vector<std::string> subDirNames,
+        bool removeDir)
 {
     std::string parentDir = op::getFileParentFolderPath(calibrateDir);
-    std::string imgRootDir = parentDir + "calibimages";
-    op::makeDirectory(imgRootDir);
-    std::string imageDir = op::formatAsDirectory(imgRootDir) + subDirName;
+    std::string imageDir = parentDir + "calibimages";
     op::makeDirectory(imageDir);
+    for (const std::string& subDirName : subDirNames)
+    {
+        imageDir = op::formatAsDirectory(imageDir) + subDirName;
+        op::makeDirectory(imageDir);
+    }
+    if (removeDir)
+    {
+        boost::filesystem::remove_all(imageDir);
+        op::makeDirectory(imageDir);
+    }
     return imageDir;
 }
 
@@ -98,8 +108,7 @@ void CameraCalibWidget::on_buttonIntStartCapture_clicked()
         std::string calibPath = params.inputParams.cameraParamPath;
         //QDir calibDir(QString::fromStdString(calibPath));
         //calibDir.mkdir("intrinsics");
-        std::string subDirName = "intrinsics/" + cameraName;
-        params.outputParams.imageSavePath = getImageDir(calibPath, subDirName);
+        params.outputParams.imageSavePath = getImageDir(calibPath, {"intrinsics", cameraName}, true);
         humanPoseProcessor->start(params);
         emit processStatusChanged();
         unsetCursor();
@@ -133,8 +142,7 @@ void CameraCalibWidget::on_buttonIntStartCalibrate_clicked()
             float gridSize = ui->editChessGridSize->text().toDouble();
             int cameraIndex = ui->combCameraList->currentIndex();
             std::string cameraName = cameraNames[cameraIndex];
-            std::string subDirName = "intrinsics/" + cameraName;
-            std::string calibImageDir = getImageDir(calibrateDir, subDirName);
+            std::string calibImageDir = getImageDir(calibrateDir, {"intrinsics", cameraName});
             bool res = calibrateCameraIntrinsics(cameraName, calibImageDir, calibrateDir, gridLayout, gridSize);
 
             unsetCursor();
@@ -169,13 +177,13 @@ void CameraCalibWidget::on_buttonExtStartCapture_clicked()
         {
             //calibDir.mkdir("camerapose");
             //params.outputParams.imageSavePath = calibPath + "/camerapose";
-            params.outputParams.imageSavePath = getImageDir(calibPath, "camerapose");
+            params.outputParams.imageSavePath = getImageDir(calibPath, {"camerapose"}, true);
         }
         else
         {
             //calibDir.mkdir("extrinsics");
             //params.outputParams.imageSavePath = calibPath + "/extrinsics";
-            params.outputParams.imageSavePath = getImageDir(calibPath, "extrinsics");
+            params.outputParams.imageSavePath = getImageDir(calibPath, {"extrinsics"}, true);
         }
         humanPoseProcessor->start(params);
         emit processStatusChanged();
@@ -213,12 +221,15 @@ void CameraCalibWidget::on_buttonExtStartCalibrate_clicked()
 
             if (calibratePose)
             {
-                std::string calibImageDir = getImageDir(calibrateDir, "camerapose");
+                std::string calibImageDir = getImageDir(calibrateDir, {"camerapose"});
                 res = calibrateCameraPose(cameraNames, calibImageDir, calibrateDir, gridLayout, gridSize);
+                if (res) {
+                    res = refineCameraExtrinsics(cameraNames, calibImageDir, calibrateDir, gridLayout, gridSize);
+                }
             }
             else
             {
-                std::string calibImageDir = getImageDir(calibrateDir, "extrinsics");
+                std::string calibImageDir = getImageDir(calibrateDir, {"extrinsics"});
                 res = calibrateCameraExtrinsics(cameraNames, calibImageDir, calibrateDir, gridLayout, gridSize);
                 if (res) {
                     res = refineCameraExtrinsics(cameraNames, calibImageDir, calibrateDir, gridLayout, gridSize);

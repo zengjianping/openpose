@@ -10,10 +10,10 @@
 	"inputParams" : 
 	{
 		"cameraIndex" : -1,
-		"cameraParamPath" : "/home/zengjianping/Codes/GolfSim/openpose/datas/pose_tasks/HikvCamera01/calibration",
-		"cameraResolution" : "1224x1024",
+		"cameraParamPath" : "/home/ezgolf/ProjectGolf/Projects/openpose/datas/pose_tasks/HikvCamera01/calibration",
+		"cameraResolution" : "1280x1024",
 		"cameraTriggerMode" : 1,
-		"captureFps" : -1,
+		"captureFps" : -1.0,
 		"frameUndistort" : false,
 		"inputType" : 4,
 		"videoPath" : "",

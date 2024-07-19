@@ -25,13 +25,13 @@ struct HumanPoseParams
             HikvCamera,
             InputTypeNum
         };
-        InputType inputType = MindCamera;
+        InputType inputType = HikvCamera;
         std::string videoPath = "";
         int viewNumber = -1;
         int cameraIndex = -1;
         int cameraTriggerMode = 1;
         double captureFps = -1.;
-        std::string cameraResolution = "1224x1024";
+        std::string cameraResolution = "1280x1024";
         std::string cameraParamPath = "calibration";
         bool frameUndistort = false;
     };
