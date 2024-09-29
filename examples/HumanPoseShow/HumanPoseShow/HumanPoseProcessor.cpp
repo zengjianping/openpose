@@ -459,6 +459,7 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
         bool flir_camera = false;
         bool mind_camera = false;
         bool hikv_camera = false;
+        bool crop_image = true;
         std::string camera_resolution = "-1x-1";
         std::string output_resolution = "-1x-1";
         std::string net_resolution = "-1x368";
@@ -565,6 +566,7 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
         camera_index = params.inputParams.cameraIndex;
         camera_trigger_mode = params.inputParams.cameraTriggerMode;
         capture_fps = params.inputParams.captureFps;
+        crop_image = params.inputParams.cropImage;
         camera_resolution = params.inputParams.cameraResolution;
         camera_parameter_path = params.inputParams.cameraParamPath;
         frame_undistort = params.inputParams.frameUndistort;
@@ -702,7 +704,7 @@ void configureWrapper(op::Wrapper& opWrapper, const HumanPoseParams& params, Hum
             producerType, producerString, frame_first, frame_step, frame_last,
             process_real_time, frame_flip, frame_rotate, frames_repeat,
             cameraSize, op::String(camera_parameter_path), frame_undistort, num_views_3d,
-            camera_trigger_mode, capture_fps, batch_process};
+            camera_trigger_mode, capture_fps, batch_process, crop_image};
         opWrapper.configure(wrapperStructInput);
 
         // Output (comment or use default argument to disable any output)
@@ -797,6 +799,7 @@ bool HumanPoseParams::loadFromFile(const std::string& paramFile, std::string& md
     inputParams.cameraTriggerMode = inputValue["cameraTriggerMode"].asInt();
     inputParams.captureFps = inputValue["captureFps"].asFloat();
     inputParams.cameraResolution = inputValue["cameraResolution"].asString();
+    inputParams.cropImage = inputValue["cropImage"].asBool();
     inputParams.cameraParamPath = inputValue["cameraParamPath"].asString();
     inputParams.frameUndistort = inputValue["frameUndistort"].asBool();
 
@@ -831,6 +834,7 @@ bool HumanPoseParams::saveToFile(const std::string& paramFile, std::string& md5)
     inputValue["cameraTriggerMode"] = Json::Value(inputParams.cameraTriggerMode);
     inputValue["captureFps"] = Json::Value(inputParams.captureFps);
     inputValue["cameraResolution"] = Json::Value(inputParams.cameraResolution);
+    inputValue["cropImage"] = Json::Value(inputParams.cropImage);
     inputValue["cameraParamPath"] = Json::Value(inputParams.cameraParamPath);
     inputValue["frameUndistort"] = Json::Value(inputParams.frameUndistort);
 

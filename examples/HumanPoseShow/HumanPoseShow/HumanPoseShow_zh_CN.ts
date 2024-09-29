@@ -57,56 +57,61 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="CameraCalibWidget.ui" line="258"/>
+        <location filename="CameraCalibWidget.ui" line="257"/>
+        <source>相机姿态模式</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="CameraCalibWidget.ui" line="271"/>
         <source>标定棋盘信息</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="CameraCalibWidget.ui" line="287"/>
+        <location filename="CameraCalibWidget.ui" line="300"/>
         <source>方格尺寸：</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="CameraCalibWidget.ui" line="304"/>
+        <location filename="CameraCalibWidget.ui" line="317"/>
         <source>毫米</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="CameraCalibWidget.ui" line="327"/>
+        <location filename="CameraCalibWidget.ui" line="340"/>
         <source>方格布局：</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="CameraCalibWidget.cpp" line="64"/>
-        <location filename="CameraCalibWidget.cpp" line="109"/>
-        <location filename="CameraCalibWidget.cpp" line="123"/>
-        <location filename="CameraCalibWidget.cpp" line="125"/>
-        <location filename="CameraCalibWidget.cpp" line="168"/>
-        <location filename="CameraCalibWidget.cpp" line="182"/>
-        <location filename="CameraCalibWidget.cpp" line="184"/>
+        <location filename="CameraCalibWidget.cpp" line="66"/>
+        <location filename="CameraCalibWidget.cpp" line="133"/>
+        <location filename="CameraCalibWidget.cpp" line="150"/>
+        <location filename="CameraCalibWidget.cpp" line="152"/>
+        <location filename="CameraCalibWidget.cpp" line="209"/>
+        <location filename="CameraCalibWidget.cpp" line="241"/>
+        <location filename="CameraCalibWidget.cpp" line="243"/>
         <source>提示</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="CameraCalibWidget.cpp" line="64"/>
+        <location filename="CameraCalibWidget.cpp" line="66"/>
         <source>查询相机失败！</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="CameraCalibWidget.cpp" line="109"/>
-        <location filename="CameraCalibWidget.cpp" line="168"/>
+        <location filename="CameraCalibWidget.cpp" line="133"/>
+        <location filename="CameraCalibWidget.cpp" line="209"/>
         <source>相机标定时间较长，请耐心等待！</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="CameraCalibWidget.cpp" line="123"/>
-        <location filename="CameraCalibWidget.cpp" line="182"/>
+        <location filename="CameraCalibWidget.cpp" line="150"/>
+        <location filename="CameraCalibWidget.cpp" line="241"/>
         <source>标定成功！</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="CameraCalibWidget.cpp" line="125"/>
-        <location filename="CameraCalibWidget.cpp" line="184"/>
+        <location filename="CameraCalibWidget.cpp" line="152"/>
+        <location filename="CameraCalibWidget.cpp" line="243"/>
         <source>标定失败！</source>
         <translation type="unfinished"></translation>
     </message>
@@ -172,53 +177,58 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DialogInputConfig.ui" line="177"/>
+        <location filename="DialogInputConfig.ui" line="173"/>
+        <source>剪裁图像</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="DialogInputConfig.ui" line="196"/>
         <source>相机帧率：</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DialogInputConfig.ui" line="206"/>
+        <location filename="DialogInputConfig.ui" line="225"/>
         <source>帧/秒</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DialogInputConfig.ui" line="225"/>
+        <location filename="DialogInputConfig.ui" line="244"/>
         <source>使用最大帧率</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DialogInputConfig.ui" line="248"/>
+        <location filename="DialogInputConfig.ui" line="267"/>
         <source>相机触发模式：</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DialogInputConfig.ui" line="281"/>
+        <location filename="DialogInputConfig.ui" line="300"/>
         <source>视频路径：</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DialogInputConfig.ui" line="310"/>
-        <location filename="DialogInputConfig.ui" line="414"/>
+        <location filename="DialogInputConfig.ui" line="329"/>
+        <location filename="DialogInputConfig.ui" line="433"/>
         <source>...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DialogInputConfig.ui" line="333"/>
+        <location filename="DialogInputConfig.ui" line="352"/>
         <source>视频通道数：</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DialogInputConfig.ui" line="362"/>
+        <location filename="DialogInputConfig.ui" line="381"/>
         <source>使用最大通达数</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DialogInputConfig.ui" line="385"/>
+        <location filename="DialogInputConfig.ui" line="404"/>
         <source>相机标定目录：</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DialogInputConfig.ui" line="429"/>
+        <location filename="DialogInputConfig.ui" line="448"/>
         <source>启用相机畸变校正</source>
         <translation type="unfinished"></translation>
     </message>
@@ -281,15 +291,19 @@
     </message>
     <message>
         <location filename="DialogOutputConfig.ui" line="287"/>
-        <location filename="DialogOutputConfig.ui" line="300"/>
         <source>保存3D视频</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="DialogOutputConfig.cpp" line="61"/>
-        <location filename="DialogOutputConfig.cpp" line="69"/>
-        <location filename="DialogOutputConfig.cpp" line="77"/>
-        <location filename="DialogOutputConfig.cpp" line="84"/>
+        <location filename="DialogOutputConfig.ui" line="300"/>
+        <source>保存姿态数据</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="DialogOutputConfig.cpp" line="63"/>
+        <location filename="DialogOutputConfig.cpp" line="71"/>
+        <location filename="DialogOutputConfig.cpp" line="79"/>
+        <location filename="DialogOutputConfig.cpp" line="86"/>
         <source>选择目录</source>
         <translation type="unfinished"></translation>
     </message>
@@ -590,12 +604,12 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="492"/>
+        <location filename="mainwindow.cpp" line="493"/>
         <source>3D姿态视图</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="501"/>
+        <location filename="mainwindow.cpp" line="503"/>
         <source>3D姿态数据</source>
         <translation type="unfinished"></translation>
     </message>

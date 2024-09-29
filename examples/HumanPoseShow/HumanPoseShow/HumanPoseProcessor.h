@@ -32,6 +32,7 @@ struct HumanPoseParams
         int cameraTriggerMode = 1;
         double captureFps = -1.;
         std::string cameraResolution = "1280x1024";
+        bool cropImage = true;
         std::string cameraParamPath = "calibration";
         bool frameUndistort = false;
     };

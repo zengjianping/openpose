@@ -39,7 +39,7 @@ void DialogInputConfig::initializeUI()
     ui->checkAllCamera->setChecked(true);
 
     // 相机分辨率
-    QStringList cameraResolutions = {"-1x-1", "1224x1024", "1280x1024"};
+    QStringList cameraResolutions = {"-1x-1", "1224x1024", "1280x1024", "960x768"};
     ui->combCameraResolution->addItems(cameraResolutions);
 
     // 相机帧率
@@ -81,6 +81,7 @@ void DialogInputConfig::loadParams()
     int index = ui->combCameraResolution->findText(QString::fromStdString(configParams.cameraResolution));
     if (index == -1) index = 0;
     ui->combCameraResolution->setCurrentIndex(index);
+    ui->checkCropImage->setChecked(configParams.cropImage);
 
     // 相机帧率
     if (configParams.captureFps > 0)
@@ -118,6 +119,7 @@ void DialogInputConfig::updateParams()
 
     // 相机分辨率
     configParams.cameraResolution = ui->combCameraResolution->currentText().toStdString();
+    configParams.cropImage = ui->checkCropImage->isChecked();
 
     // 相机帧率
     if (ui->checkMaxFps->isChecked())
